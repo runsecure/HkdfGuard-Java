@@ -1,9 +1,9 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.ComponentTelemetry;
 import com.runsecure.hkdfguard.diagnostics.HkdfGuardTelemetry;
@@ -13,44 +13,44 @@ import java.security.SecureRandom;
 import java.util.function.BiFunction;
 
 /**
- * An IDataProtectionKey backed by a plain 32-byte DEK, used directly - never wrapped, never
+ * An DataProtectionKey backed by a plain 32-byte DEK, used directly - never wrapped, never
  * unwrapped. Meant for a pipeline that needs to encrypt secrets in-flight before a durable KEK
  * exists yet: construct one (generating a fresh random DEK, or supplying an existing one),
  * encrypt whatever needs protecting during the pipeline, then read the same plaintext DEK back
  * via asBytes at the end of the chain to hand off to the platform's native "initialize" CLI
  * utility, which independently wraps/registers it against a real KEK. close zeroes the DEK.
  */
-public final class PipelineDataEncryptionKey implements IDataProtectionKey, AutoCloseable {
+public final class PipelineDataEncryptionKeyImpl implements DataProtectionKey, AutoCloseable {
 
     private static final int DEK_LENGTH = 32;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final byte[] dek;
-    private final ICryptoSessionProvider sessionProvider;
-    private final KeyWrappedDataEncryptionKey inner;
+    private final CryptoProvider provider;
+    private final KeyWrappedDataEncryptionKeyImpl inner;
 
     /**
      * Generates a fresh, cryptographically random 32-byte DEK.
      *
      * @param sessionProviderFactory See the other constructor overload.
      */
-    public PipelineDataEncryptionKey(BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> sessionProviderFactory) {
+    public PipelineDataEncryptionKeyImpl(BiFunction<KeyWrapper, byte[], CryptoProvider> sessionProviderFactory) {
         this(randomDek(), sessionProviderFactory);
     }
 
     /**
      * @param dek The plain 32-byte DEK to use as-is - ownership transfers to this instance, which
      *     zeroes it on close.
-     * @param sessionProviderFactory Builds the ICryptoSessionProvider this instance
+     * @param sessionProviderFactory Builds the CryptoProvider this instance
      *     encrypts/decrypts through (this class can't construct one directly - a concrete
      *     provider lives in whichever cipher module the caller chose, not here) - e.g.
-     *     {@code (kw, wrapped) -> new AesGcmCryptoSessionProvider(kw, wrapped, 60)}. Since dek
+     *     {@code (kw, wrapped) -> new AesGcmCryptoProviderImpl(kw, wrapped, 60)}. Since dek
      *     needs no unwrapping, it's handed to that factory as both the key wrapper (an identity
      *     wrapper that reveals whatever "wrapped" bytes it's given, unchanged) and the wrapped
      *     payload itself.
      * @throws IllegalArgumentException dek is empty/all-zero, or not exactly 32 bytes
      */
-    public PipelineDataEncryptionKey(byte[] dek, BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> sessionProviderFactory) {
+    public PipelineDataEncryptionKeyImpl(byte[] dek, BiFunction<KeyWrapper, byte[], CryptoProvider> sessionProviderFactory) {
         if (ArrayUtility.isNullOrEmpty(dek)) {
             throw new IllegalArgumentException("DEK must not be empty or all zero.");
         }
@@ -62,8 +62,8 @@ public final class PipelineDataEncryptionKey implements IDataProtectionKey, Auto
         Span span = telemetry.getTracer().spanBuilder(ActivityNames.DataProtection.PIPELINE_KEY_INITIALIZE).startSpan();
         try {
             this.dek = dek;
-            this.sessionProvider = sessionProviderFactory.apply(new IdentityKeyWrapper(), dek);
-            this.inner = new KeyWrappedDataEncryptionKey(sessionProvider);
+            this.provider = sessionProviderFactory.apply(new IdentityKeyWrapperImpl(), dek);
+            this.inner = new KeyWrappedDataEncryptionKeyImpl(provider);
         } catch (RuntimeException ex) {
             telemetry.recordException(span, ex);
             throw ex;
@@ -111,22 +111,22 @@ public final class PipelineDataEncryptionKey implements IDataProtectionKey, Auto
      */
     @Override
     public void close() {
-        sessionProvider.close();
+        provider.close();
         ArrayUtility.zeroMemory(dek);
     }
 
     // Treats the "wrapped" payload it's handed as already being the plaintext key - there is
     // nothing to unwrap, since this whole class's point is using a plain key as-is.
-    private static final class IdentityKeyWrapper implements IKeyWrapper {
+    private static final class IdentityKeyWrapperImpl implements KeyWrapper {
 
         @Override
         public int encrypt(byte[] plaintext, byte[] result) {
-            throw new UnsupportedOperationException("IdentityKeyWrapper only supports decrypt.");
+            throw new UnsupportedOperationException("IdentityKeyWrapperImpl only supports decrypt.");
         }
 
         @Override
         public int encrypt(byte[] plaintext, byte[] result, byte[] aad) {
-            throw new UnsupportedOperationException("IdentityKeyWrapper only supports decrypt.");
+            throw new UnsupportedOperationException("IdentityKeyWrapperImpl only supports decrypt.");
         }
 
         @Override
@@ -142,7 +142,7 @@ public final class PipelineDataEncryptionKey implements IDataProtectionKey, Auto
 
         @Override
         public int generateAndWrap(byte[] result) {
-            throw new UnsupportedOperationException("IdentityKeyWrapper only supports decrypt.");
+            throw new UnsupportedOperationException("IdentityKeyWrapperImpl only supports decrypt.");
         }
     }
 }

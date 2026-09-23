@@ -15,7 +15,7 @@ import io.opentelemetry.api.metrics.LongCounter;
  * getTracer/getMeter, and costs nothing that matters: instrument creation is cheap and interned
  * by the SDK.
  *
- * <p>recordOperation counts every ProtectedCache add/addOrUpdate call, tagged with
+ * <p>recordOperation counts every ProtectedCacheImpl add/addOrUpdate call, tagged with
  * {@link AttributeNames#OPERATION_NAME} (which ActivityNames.Cache constant ran) and
  * {@link AttributeNames#RESULT} ("success" or "error").
  */
@@ -29,7 +29,7 @@ public final class CacheMetrics {
                 .getMeter()
                 .counterBuilder(MetricNames.Cache.OPERATIONS)
                 .setUnit("{operation}")
-                .setDescription("Number of ProtectedCache operations, tagged by operation and result.")
+                .setDescription("Number of ProtectedCacheImpl operations, tagged by operation and result.")
                 .build();
 
         operations.add(1,

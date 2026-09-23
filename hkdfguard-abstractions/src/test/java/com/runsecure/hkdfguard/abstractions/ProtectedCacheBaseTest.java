@@ -19,14 +19,14 @@ import static org.mockito.Mockito.when;
 class ProtectedCacheBaseTest {
 
     @Mock
-    private IDataProtectionKey dataProtectionKey;
+    private DataProtectionKey dataProtectionKey;
 
     /**
      * A no-op "encryption" stand-in: encrypt/decrypt just copy bytes through unchanged, so the
      * test can assert on plaintext round-tripping without a real cipher.
      */
     private static final class TestCache extends ProtectedCacheBase {
-        TestCache(IDataProtectionKey dataProtectionKey) {
+        TestCache(DataProtectionKey dataProtectionKey) {
             super(dataProtectionKey);
         }
 

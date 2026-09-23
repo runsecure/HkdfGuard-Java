@@ -1,8 +1,7 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.ICryptoSession;
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.AttributeNames;
 import com.runsecure.hkdfguard.diagnostics.ComponentTelemetry;
@@ -12,23 +11,22 @@ import io.opentelemetry.api.trace.Span;
 import java.util.Arrays;
 
 /**
- * An IDataProtectionKey backed by one wrapped DEK payload. sessionProvider owns revealing that
- * payload's key (from a fresh unwrap, once its cached ICryptoSession expires) and performing the
- * actual data encrypt/decrypt with it - see ICryptoSessionProvider. Every operation resolves
- * getSession fresh rather than caching the session itself, so it always uses a non-expired one.
+ * An DataProtectionKey backed by one wrapped DEK payload. provider owns revealing that payload's
+ * key (from a fresh unwrap, on its own internal refresh schedule) and performing the actual data
+ * encrypt/decrypt with it - see CryptoProvider.
  */
-public class KeyWrappedDataEncryptionKey implements IDataProtectionKey {
+public class KeyWrappedDataEncryptionKeyImpl implements DataProtectionKey {
 
-    // ICryptoSession is cipher-agnostic, so its exact ciphertext overhead (nonce/tag for
+    // CryptoProvider is cipher-agnostic, so its exact ciphertext overhead (nonce/tag for
     // AES-GCM, potentially something else for a swapped-in cipher) isn't known here - over-
     // allocate generously and trim to what it actually wrote.
     private static final int MAX_CIPHER_OVERHEAD = 64;
     private static final byte[] EMPTY_AAD = new byte[0];
 
-    private final ICryptoSessionProvider sessionProvider;
+    private final CryptoProvider provider;
 
-    public KeyWrappedDataEncryptionKey(ICryptoSessionProvider sessionProvider) {
-        this.sessionProvider = sessionProvider;
+    public KeyWrappedDataEncryptionKeyImpl(CryptoProvider provider) {
+        this.provider = provider;
     }
 
     @Override
@@ -47,9 +45,8 @@ public class KeyWrappedDataEncryptionKey implements IDataProtectionKey {
                         ComponentTelemetry.Detail.of(AttributeNames.AAD_LENGTH, aad.length));
             }
 
-            ICryptoSession session = sessionProvider.getSession();
             byte[] buffer = new byte[plaintext.length + MAX_CIPHER_OVERHEAD];
-            int written = session.encrypt(plaintext, aad, buffer);
+            int written = provider.encrypt(plaintext, aad, buffer);
             return Arrays.copyOf(buffer, written);
         } catch (RuntimeException ex) {
             telemetry.recordException(span, ex);
@@ -75,8 +72,7 @@ public class KeyWrappedDataEncryptionKey implements IDataProtectionKey {
                         ComponentTelemetry.Detail.of(AttributeNames.AAD_LENGTH, aad.length));
             }
 
-            ICryptoSession session = sessionProvider.getSession();
-            return session.decrypt(ciphertext, aad, result);
+            return provider.decrypt(ciphertext, aad, result);
         } catch (RuntimeException ex) {
             telemetry.recordException(span, ex);
             throw ex;

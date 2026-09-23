@@ -4,14 +4,12 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AesGcmCryptoSessionTest {
 
@@ -25,7 +23,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void encryptDecrypt_roundTrips() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] expectedPlaintext = plaintext.clone();
         byte[] encrypted = new byte[plaintext.length + 28];
@@ -42,7 +40,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void encryptDecrypt_roundTrips_withAad() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] expectedPlaintext = plaintext.clone();
         byte[] aad = "context".getBytes(StandardCharsets.UTF_8);
@@ -58,7 +56,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void decrypt_withWrongAad_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = new byte[plaintext.length + 28];
         cipher.encrypt(plaintext, "correct-aad".getBytes(StandardCharsets.UTF_8), encrypted);
@@ -70,7 +68,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void decrypt_withTamperedCiphertext_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = new byte[plaintext.length + 28];
         cipher.encrypt(plaintext, encrypted);
@@ -82,7 +80,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void encrypt_withTooSmallResultBuffer_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] tooSmall = new byte[plaintext.length];
 
@@ -91,7 +89,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void decrypt_withTooShortCiphertext_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] tooShort = new byte[10];
         byte[] result = new byte[4];
 
@@ -103,39 +101,19 @@ class AesGcmCryptoSessionTest {
         byte[] invalidKey = new byte[10];
         RANDOM.nextBytes(invalidKey);
 
-        assertThrows(IllegalArgumentException.class, () -> new AesGcmCryptoSession(invalidKey, 60));
+        assertThrows(IllegalArgumentException.class, () -> new AesGcmCryptoSession(invalidKey));
     }
 
     @Test
     void constructor_withAllZeroKey_throws() {
         byte[] zeroKey = new byte[32];
 
-        assertThrows(IllegalArgumentException.class, () -> new AesGcmCryptoSession(zeroKey, 60));
-    }
-
-    @Test
-    void constructor_doesNotValidateExpirySeconds() {
-        // AesGcmCryptoSession is package-private - its only caller, AesGcmCryptoSessionProvider,
-        // already validates expirySeconds (see AesGcmCryptoSessionProviderTest), so this
-        // constructor trusts it rather than re-checking.
-        for (int expirySeconds : new int[]{0, -1, 301}) {
-            new AesGcmCryptoSession(randomKey(), expirySeconds);
-        }
-    }
-
-    @Test
-    void constructor_setsExpiresAtApproximatelyExpirySecondsFromNow() {
-        Instant before = Instant.now();
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
-        Instant after = Instant.now();
-
-        assertTrue(!cipher.getExpiresAt().isBefore(before.plusSeconds(60)));
-        assertTrue(!cipher.getExpiresAt().isAfter(after.plusSeconds(60)));
+        assertThrows(IllegalArgumentException.class, () -> new AesGcmCryptoSession(zeroKey));
     }
 
     @Test
     void encrypt_withAllZeroPlaintext_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] zeroPlaintext = new byte[11];
         byte[] encrypted = new byte[zeroPlaintext.length + 28];
 
@@ -144,7 +122,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void decrypt_withNonZeroButTooShortCiphertext_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] tooShort = new byte[10];
         RANDOM.nextBytes(tooShort); // non-zero, but shorter than nonce + tag
         byte[] result = new byte[4];
@@ -154,7 +132,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void decrypt_withTooSmallResultBuffer_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         byte[] plaintext = "hello world".getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = new byte[plaintext.length + 28];
         cipher.encrypt(plaintext, encrypted);
@@ -167,7 +145,7 @@ class AesGcmCryptoSessionTest {
     void close_zeroesTheKey() {
         byte[] key = randomKey();
         byte[] keyClone = key.clone();
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(key, 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(key);
 
         cipher.close();
 
@@ -177,7 +155,7 @@ class AesGcmCryptoSessionTest {
 
     @Test
     void close_thenEncrypt_throws() {
-        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey(), 60);
+        AesGcmCryptoSession cipher = new AesGcmCryptoSession(randomKey());
         cipher.close();
 
         assertThrows(ObjectDisposedException.class,

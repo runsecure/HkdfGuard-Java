@@ -1,8 +1,8 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoSessionProvider;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AuthenticationTagMismatchException;
 import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.FakeKeyWrapper;
 import org.junit.jupiter.api.Test;
@@ -16,12 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class EphemeralDataEncryptionKeyTest {
+class EphemeralDataEncryptionKeyImplTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> SESSION_PROVIDER_FACTORY =
-            (keyWrapper, wrapped) -> new AesGcmCryptoSessionProvider(keyWrapper, wrapped, 60);
+    private static final BiFunction<KeyWrapper, byte[], CryptoProvider> SESSION_PROVIDER_FACTORY =
+            (keyWrapper, wrapped) -> new AesGcmCryptoProviderImpl(keyWrapper, wrapped, 60);
 
     private static FakeKeyWrapper randomWrapper() {
         byte[] key = new byte[32];
@@ -33,7 +33,7 @@ class EphemeralDataEncryptionKeyTest {
     void constructor_generatesWrappedDekExactlyOnce() {
         FakeKeyWrapper wrapper = randomWrapper();
 
-        new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
 
         assertEquals(1, wrapper.getGenerateAndWrapCallCount());
     }
@@ -41,7 +41,7 @@ class EphemeralDataEncryptionKeyTest {
     @Test
     void encryptDecrypt_roundTrips() {
         FakeKeyWrapper wrapper = randomWrapper();
-        EphemeralDataEncryptionKey key = new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        EphemeralDataEncryptionKeyImpl key = new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
@@ -56,7 +56,7 @@ class EphemeralDataEncryptionKeyTest {
     @Test
     void encryptDecrypt_withAad_roundTrips() {
         FakeKeyWrapper wrapper = randomWrapper();
-        EphemeralDataEncryptionKey key = new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        EphemeralDataEncryptionKeyImpl key = new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
         byte[] aad = "context".getBytes(StandardCharsets.UTF_8);
@@ -71,7 +71,7 @@ class EphemeralDataEncryptionKeyTest {
     @Test
     void decrypt_withMismatchedAad_throws() {
         FakeKeyWrapper wrapper = randomWrapper();
-        EphemeralDataEncryptionKey key = new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        EphemeralDataEncryptionKeyImpl key = new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
         byte[] encrypted = key.encrypt("top secret".getBytes(StandardCharsets.UTF_8), "context-a".getBytes(StandardCharsets.UTF_8));
 
         assertThrows(AuthenticationTagMismatchException.class,
@@ -81,7 +81,7 @@ class EphemeralDataEncryptionKeyTest {
     @Test
     void encryptAndDecrypt_reuseTheSameGeneratedKeyAcrossCalls() {
         FakeKeyWrapper wrapper = randomWrapper();
-        EphemeralDataEncryptionKey key = new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        EphemeralDataEncryptionKeyImpl key = new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
 
         byte[] encrypted1 = key.encrypt("first".getBytes(StandardCharsets.UTF_8));
         byte[] encrypted2 = key.encrypt("second".getBytes(StandardCharsets.UTF_8));
@@ -98,11 +98,11 @@ class EphemeralDataEncryptionKeyTest {
 
     @Test
     void encryptAndDecrypt_reuseTheCachedSessionAcrossCalls() {
-        // AesGcmCryptoSessionProvider only calls back into the key wrapper when it has no cached
+        // AesGcmCryptoProviderImpl only calls back into the key wrapper when it has no cached
         // session yet or the cached one has expired - not on every operation - so the wrapper's
         // key is revealed once here, then reused for every subsequent encrypt/decrypt.
         FakeKeyWrapper wrapper = randomWrapper();
-        EphemeralDataEncryptionKey key = new EphemeralDataEncryptionKey(wrapper, SESSION_PROVIDER_FACTORY);
+        EphemeralDataEncryptionKeyImpl key = new EphemeralDataEncryptionKeyImpl(wrapper, SESSION_PROVIDER_FACTORY);
         byte[] encrypted = key.encrypt("value".getBytes(StandardCharsets.UTF_8));
 
         key.decrypt(encrypted, new byte[5]);

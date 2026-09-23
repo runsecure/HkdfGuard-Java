@@ -1,7 +1,7 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.IProtectedCache;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.ProtectedCache;
 import com.runsecure.hkdfguard.abstractions.ProtectedCacheBase;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.AttributeNames;
@@ -13,7 +13,7 @@ import io.opentelemetry.api.trace.Span;
 import org.slf4j.Logger;
 
 /**
- * Default IProtectedCache. Backed by a single, already-built IDataProtectionKey - every
+ * Default ProtectedCache. Backed by a single, already-built DataProtectionKey - every
  * add/addOrUpdate encrypts through it (see ProtectedCacheBase), every decrypt reveals through it.
  * add uses putIfAbsent as its atomicity gate so a duplicate name is rejected even under
  * concurrent callers; addOrUpdate's upsert and decrypt's reads are otherwise lock-free, so this
@@ -25,15 +25,15 @@ import org.slf4j.Logger;
  * debug log per sensitive operation and an error log per failure alongside the existing
  * span/CacheMetrics telemetry.
  */
-public final class ProtectedCache extends ProtectedCacheBase implements IProtectedCache {
+public final class ProtectedCacheImpl extends ProtectedCacheBase implements ProtectedCache {
 
     private final Logger logger;
 
-    public ProtectedCache(IDataProtectionKey dataProtectionKey) {
+    public ProtectedCacheImpl(DataProtectionKey dataProtectionKey) {
         this(dataProtectionKey, null);
     }
 
-    public ProtectedCache(IDataProtectionKey dataProtectionKey, Logger logger) {
+    public ProtectedCacheImpl(DataProtectionKey dataProtectionKey, Logger logger) {
         super(dataProtectionKey);
         this.logger = logger;
     }

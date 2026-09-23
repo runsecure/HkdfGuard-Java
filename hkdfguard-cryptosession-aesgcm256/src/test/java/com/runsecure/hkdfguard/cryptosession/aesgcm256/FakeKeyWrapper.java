@@ -1,14 +1,14 @@
 package com.runsecure.hkdfguard.cryptosession.aesgcm256;
 
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 
 import java.security.SecureRandom;
 
 /**
- * An IKeyWrapper that always reveals a fresh random key, tracking how many times decrypt was
- * called - isolates AesGcmCryptoSessionProvider tests from any real native KMS machinery.
+ * An KeyWrapper that always reveals a fresh random key, tracking how many times decrypt was
+ * called - isolates AesGcmCryptoProviderImpl tests from any real native KMS machinery.
  */
-final class FakeKeyWrapper implements IKeyWrapper {
+final class FakeKeyWrapper implements KeyWrapper {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 

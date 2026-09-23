@@ -1,17 +1,17 @@
 package com.runsecure.hkdfguard.dataencryptionkey.testhelpers;
 
-import com.runsecure.hkdfguard.abstractions.IEncryptedFormatProvider;
+import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.abstractions.KeyTrackingValue;
-import com.runsecure.hkdfguard.dataencryptionkey.formatprovider.DefaultFormatProvider;
+import com.runsecure.hkdfguard.dataencryptionkey.formatprovider.DefaultFormatProviderImpl;
 
 /**
- * A real DefaultFormatProvider wrapped with call tracking, so a test can prove a component (e.g.
- * KeyRing/KeyRingBuilder) actually uses the specific IEncryptedFormatProvider instance it was
+ * A real DefaultFormatProviderImpl wrapped with call tracking, so a test can prove a component (e.g.
+ * KeyRing/KeyRingBuilder) actually uses the specific EncryptedFormatProvider instance it was
  * given, rather than some other one.
  */
-public final class RecordingFormatProvider implements IEncryptedFormatProvider {
+public final class RecordingFormatProvider implements EncryptedFormatProvider {
 
-    private final DefaultFormatProvider inner = new DefaultFormatProvider();
+    private final DefaultFormatProviderImpl inner = new DefaultFormatProviderImpl();
 
     private boolean formatCalled;
     private boolean parseCalled;

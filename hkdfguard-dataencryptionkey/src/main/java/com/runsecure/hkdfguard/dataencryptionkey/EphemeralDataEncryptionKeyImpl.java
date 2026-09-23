@@ -1,8 +1,8 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.ComponentTelemetry;
 import com.runsecure.hkdfguard.diagnostics.HkdfGuardTelemetry;
@@ -12,32 +12,32 @@ import java.util.Arrays;
 import java.util.function.BiFunction;
 
 /**
- * An IDataProtectionKey whose own DEK is never read from a file on disk - keyWrapper generates
- * and immediately wraps a fresh one in the constructor (see IKeyWrapper.generateAndWrap); the
+ * An DataProtectionKey whose own DEK is never read from a file on disk - keyWrapper generates
+ * and immediately wraps a fresh one in the constructor (see KeyWrapper.generateAndWrap); the
  * plaintext DEK itself never crosses that call's return value. sessionProviderFactory then binds
- * an ICryptoSessionProvider to that wrapped payload (this class can't construct one directly - a
+ * a CryptoProvider to that wrapped payload (this class can't construct one directly - a
  * concrete provider lives in whichever cipher module the caller chose, not here). Every
- * encrypt/decrypt delegates to an inner KeyWrappedDataEncryptionKey built from that provider, the
+ * encrypt/decrypt delegates to an inner KeyWrappedDataEncryptionKeyImpl built from that provider, the
  * same as a durable, file-backed key would use.
  */
-public final class EphemeralDataEncryptionKey implements IDataProtectionKey {
+public final class EphemeralDataEncryptionKeyImpl implements DataProtectionKey {
 
-    // IKeyWrapper.generateAndWrap is implementation-agnostic about its own wrapped-payload
+    // KeyWrapper.generateAndWrap is implementation-agnostic about its own wrapped-payload
     // format/size (a native KMS library's is a small fixed size, at most a few hundred bytes) -
     // over-allocate generously and trim to what it actually wrote, the same as
-    // KeyWrappedDataEncryptionKey's MAX_CIPHER_OVERHEAD does for cipher output.
+    // KeyWrappedDataEncryptionKeyImpl's MAX_CIPHER_OVERHEAD does for cipher output.
     private static final int MAX_WRAPPED_LENGTH = 512;
 
-    private final KeyWrappedDataEncryptionKey inner;
+    private final KeyWrappedDataEncryptionKeyImpl inner;
 
     /**
      * @param keyWrapper Generates and wraps this instance's own fresh DEK.
-     * @param sessionProviderFactory Builds the ICryptoSessionProvider bound to keyWrapper and its
+     * @param sessionProviderFactory Builds the CryptoProvider bound to keyWrapper and its
      *     freshly-generated wrapped payload - e.g.
-     *     {@code (kw, wrapped) -> new AesGcmCryptoSessionProvider(kw, wrapped, 60)}.
+     *     {@code (kw, wrapped) -> new AesGcmCryptoProviderImpl(kw, wrapped, 60)}.
      */
-    public EphemeralDataEncryptionKey(IKeyWrapper keyWrapper,
-                                       BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> sessionProviderFactory) {
+    public EphemeralDataEncryptionKeyImpl(KeyWrapper keyWrapper,
+                                       BiFunction<KeyWrapper, byte[], CryptoProvider> sessionProviderFactory) {
         ComponentTelemetry telemetry = HkdfGuardTelemetry.DATA_PROTECTION;
         Span span = telemetry.getTracer().spanBuilder(ActivityNames.DataProtection.EPHEMERAL_KEY_INITIALIZE).startSpan();
         try {
@@ -45,8 +45,8 @@ public final class EphemeralDataEncryptionKey implements IDataProtectionKey {
             int written = keyWrapper.generateAndWrap(buffer);
             byte[] wrapped = Arrays.copyOf(buffer, written);
 
-            ICryptoSessionProvider sessionProvider = sessionProviderFactory.apply(keyWrapper, wrapped);
-            this.inner = new KeyWrappedDataEncryptionKey(sessionProvider);
+            CryptoProvider provider = sessionProviderFactory.apply(keyWrapper, wrapped);
+            this.inner = new KeyWrappedDataEncryptionKeyImpl(provider);
         } catch (RuntimeException ex) {
             telemetry.recordException(span, ex);
             throw ex;

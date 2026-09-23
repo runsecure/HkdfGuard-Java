@@ -4,13 +4,13 @@ package com.runsecure.hkdfguard.abstractions;
  * A named, string-level data protector: the name given at construction is used as the Additional
  * Auth Data for every encrypt/decrypt, binding a protected value to the purpose it was protected
  * for so it can't be reused under a different one. encrypt/decrypt resolve the actual
- * IDataProtectionKey to use from a KeyRing, rather than holding one key permanently.
+ * DataProtectionKey to use from a KeyRing, rather than holding one key permanently.
  */
-public interface IDataProtector {
+public interface DataProtector {
 
     /**
      * Encrypts a plaintext char array and formats the result via the configured
-     * IEncryptedFormatProvider
+     * EncryptedFormatProvider
      *
      * @param plaintext The plaintext to encrypt
      * @return The formatted, encrypted string
@@ -18,7 +18,7 @@ public interface IDataProtector {
     String encrypt(char[] plaintext);
 
     /**
-     * Parses a formatted encrypted string via the configured IEncryptedFormatProvider and
+     * Parses a formatted encrypted string via the configured EncryptedFormatProvider and
      * decrypts it directly into result - this never materializes the plaintext as a String.
      *
      * @param encrypted The formatted, encrypted string, as chars

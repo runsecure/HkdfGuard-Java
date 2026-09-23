@@ -1,14 +1,14 @@
 package com.runsecure.hkdfguard.dataencryptionkey.testhelpers;
 
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 
 /**
- * An IKeyWrapper that always reveals/generates the same fixed key, tracking how many times
+ * An KeyWrapper that always reveals/generates the same fixed key, tracking how many times
  * decrypt/generateAndWrap were called - isolates
- * KeyWrappedDataEncryptionKey/EphemeralDataEncryptionKey/KeyRing tests from the real native KMS
- * machinery while still exercising real AES-GCM via a real ICryptoSession.
+ * KeyWrappedDataEncryptionKeyImpl/EphemeralDataEncryptionKeyImpl/KeyRing tests from the real native KMS
+ * machinery while still exercising real AES-GCM via a real CryptoProvider.
  */
-public final class FakeKeyWrapper implements IKeyWrapper {
+public final class FakeKeyWrapper implements KeyWrapper {
 
     private final byte[] key;
     private int decryptCallCount;
@@ -16,7 +16,7 @@ public final class FakeKeyWrapper implements IKeyWrapper {
 
     /**
      * When set, decrypt throws this instead of revealing the key - lets tests exercise a
-     * KeyWrappedDataEncryptionKey encrypt/decrypt catch block without depending on the real
+     * KeyWrappedDataEncryptionKeyImpl encrypt/decrypt catch block without depending on the real
      * cipher failing.
      */
     private RuntimeException throwOnDecrypt;

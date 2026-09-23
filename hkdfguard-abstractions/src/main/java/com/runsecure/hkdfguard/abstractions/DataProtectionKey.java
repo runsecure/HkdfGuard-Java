@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.abstractions;
 
-public interface IDataProtectionKey {
+public interface DataProtectionKey {
 
     /**
      * Key Wrapper for protecting an encryption key

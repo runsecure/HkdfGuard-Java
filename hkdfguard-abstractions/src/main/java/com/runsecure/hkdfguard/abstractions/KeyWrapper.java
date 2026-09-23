@@ -7,7 +7,7 @@ package com.runsecure.hkdfguard.abstractions;
  * reveal any number of different wrapped keys sharing the same KEK - it holds no wrapped payload
  * of its own.
  */
-public interface IKeyWrapper {
+public interface KeyWrapper {
 
     /**
      * Protects an encryption key

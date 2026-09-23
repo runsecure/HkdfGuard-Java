@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.dataencryptionkey.formatprovider;
 
-import com.runsecure.hkdfguard.abstractions.IEncryptedFormatProvider;
+import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.abstractions.KeyTrackingValue;
 import com.runsecure.hkdfguard.dataencryptionkey.utilities.Base64ConversionUtility;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
@@ -9,7 +9,7 @@ import com.runsecure.hkdfguard.diagnostics.ComponentTelemetry;
 import com.runsecure.hkdfguard.diagnostics.HkdfGuardTelemetry;
 import io.opentelemetry.api.trace.Span;
 
-public class DefaultFormatProvider implements IEncryptedFormatProvider {
+public class DefaultFormatProviderImpl implements EncryptedFormatProvider {
 
     private static final String ENC_PREFIX = "enc";
     private static final String DELIMITER = "::";

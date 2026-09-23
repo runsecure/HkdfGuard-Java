@@ -1,9 +1,9 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.IDataProtector;
-import com.runsecure.hkdfguard.abstractions.IEncryptedFormatProvider;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataProtector;
+import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.abstractions.KeyTrackingValue;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.AttributeNames;
@@ -20,8 +20,8 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Default IDataProtector. Package-private: only KeyRing (KeyRing.createProtector) can construct
- * one, so callers only ever see it as an IDataProtector - guaranteeing every instance is actually
+ * Default DataProtector. Package-private: only KeyRing (KeyRing.createProtector) can construct
+ * one, so callers only ever see it as a DataProtector - guaranteeing every instance is actually
  * bound to a real KeyRing rather than constructed loose. name is UTF-8-encoded once into aad and
  * used for every encrypt/decrypt, so a value protected under one name/purpose fails to decrypt
  * under another. encrypt resolves keyRing.getCurrent() fresh on every call rather than capturing
@@ -29,14 +29,14 @@ import java.nio.charset.StandardCharsets;
  * rotation is; decrypt instead resolves whichever version the formatted ciphertext itself names,
  * so old versions stay readable regardless.
  */
-final class DataProtector implements IDataProtector {
+final class DataProtectorImpl implements DataProtector {
 
     private final String name;
     private final KeyRing keyRing;
-    private final IEncryptedFormatProvider formatProvider;
+    private final EncryptedFormatProvider formatProvider;
     private final byte[] aad;
 
-    DataProtector(String name, KeyRing keyRing, IEncryptedFormatProvider formatProvider) {
+    DataProtectorImpl(String name, KeyRing keyRing, EncryptedFormatProvider formatProvider) {
         this.name = name;
         this.keyRing = keyRing;
         this.formatProvider = formatProvider;
@@ -81,7 +81,7 @@ final class DataProtector implements IDataProtector {
             }
 
             KeyTrackingValue value = formatProvider.parse(encrypted);
-            IDataProtectionKey key = keyRing.get(value.keyVersion());
+            DataProtectionKey key = keyRing.get(value.keyVersion());
 
             // AEAD ciphertext is always at least as long as the plaintext it encloses, so
             // value.value().length is a safe upper bound for the decrypted UTF-8 byte count.

@@ -4,13 +4,13 @@ import java.util.OptionalInt;
 
 /**
  * Read surface of a highly concurrent name -&gt; encrypted-value cache backed by a single
- * IDataProtectionKey. Names are compared case-insensitively, matching ConcurrentHashMap /
+ * DataProtectionKey. Names are compared case-insensitively, matching ConcurrentHashMap /
  * ConcurrentSkipListMap conventions used by implementations. decrypt reveals a stored value back
  * into a caller-owned array, returning 0 for a missing name rather than throwing. Nothing here
  * ever holds plaintext beyond the duration of a single decrypt call - only the encrypted bytes
  * are retained internally.
  */
-public interface IProtectedReadOnlyCache {
+public interface ProtectedReadOnlyCache {
 
     /**
      * Decrypts the value stored under name into result.

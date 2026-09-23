@@ -1,13 +1,13 @@
 package com.runsecure.hkdfguard.cache.testhelpers;
 
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 
 /**
- * An IKeyWrapper that always reveals the same fixed key - isolates ProtectedCache tests from the
+ * An KeyWrapper that always reveals the same fixed key - isolates ProtectedCacheImpl tests from the
  * real blob/file/OS-storage machinery (already covered elsewhere) while still exercising real
- * AES-GCM via a real ICryptoSession.
+ * AES-GCM via a real CryptoProvider.
  */
-public final class FakeKeyWrapper implements IKeyWrapper {
+public final class FakeKeyWrapper implements KeyWrapper {
 
     private final byte[] key;
 

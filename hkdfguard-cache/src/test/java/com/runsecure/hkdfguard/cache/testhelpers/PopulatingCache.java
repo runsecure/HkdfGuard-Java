@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.cache.testhelpers;
 
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
 import com.runsecure.hkdfguard.abstractions.ProtectedCacheBase;
 
 import java.util.function.Predicate;
@@ -15,7 +15,7 @@ public final class PopulatingCache extends ProtectedCacheBase {
     private int tryPopulateCallCount;
     private Predicate<String> onTryPopulate;
 
-    public PopulatingCache(IDataProtectionKey dataProtectionKey) {
+    public PopulatingCache(DataProtectionKey dataProtectionKey) {
         super(dataProtectionKey);
     }
 

@@ -19,25 +19,25 @@ import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * Shared IProtectedReadOnlyCache plumbing for every cache in this library: a single
- * IDataProtectionKey, a case-insensitively-keyed concurrent map of encrypted bytes, and the
+ * Shared ProtectedReadOnlyCache plumbing for every cache in this library: a single
+ * DataProtectionKey, a case-insensitively-keyed concurrent map of encrypted bytes, and the
  * encrypt/decrypt/telemetry logic every concrete cache needs. decrypt/tryGetMaxDecryptedLength
  * fall back to tryPopulate on a miss before giving up - the default implementation here just
  * returns false (nothing to pull from), but a subclass backed by an external source (e.g. a
  * remote secret store) overrides it to fetch the plaintext value and encrypt it into cache on
  * demand, so nothing here ever holds plaintext beyond the duration of a single call.
  */
-public abstract class ProtectedCacheBase implements IProtectedReadOnlyCache {
+public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
 
-    private final IDataProtectionKey dataProtectionKey;
+    private final DataProtectionKey dataProtectionKey;
 
     /**
      * The encrypted values this cache holds, keyed case-insensitively. Protected so concrete
-     * caches (e.g. ProtectedCache's add/addOrUpdate) can populate it directly.
+     * caches (e.g. ProtectedCacheImpl's add/addOrUpdate) can populate it directly.
      */
     protected final Map<String, byte[]> cache = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    protected ProtectedCacheBase(IDataProtectionKey dataProtectionKey) {
+    protected ProtectedCacheBase(DataProtectionKey dataProtectionKey) {
         this.dataProtectionKey = dataProtectionKey;
     }
 
@@ -130,14 +130,14 @@ public abstract class ProtectedCacheBase implements IProtectedReadOnlyCache {
     }
 
     /**
-     * Encrypts plaintext through this cache's IDataProtectionKey.
+     * Encrypts plaintext through this cache's DataProtectionKey.
      */
     protected byte[] encrypt(byte[] plaintext) {
         return dataProtectionKey.encrypt(plaintext);
     }
 
     /**
-     * Encrypts plaintext (as UTF-8 bytes) through this cache's IDataProtectionKey. plaintext is
+     * Encrypts plaintext (as UTF-8 bytes) through this cache's DataProtectionKey. plaintext is
      * zeroed as a side effect - callers that only hold a String must copy it into a caller-owned
      * char[] first, since a String's own backing storage can't be safely cleared.
      */

@@ -14,9 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DefaultFormatProviderTest {
+class DefaultFormatProviderImplTest {
 
-    private final DefaultFormatProvider provider = new DefaultFormatProvider();
+    private final DefaultFormatProviderImpl provider = new DefaultFormatProviderImpl();
 
     @Test
     void formatParseGetMaxDecryptedLength_withSensitiveLoggingEnabled_stillWorkCorrectly() {

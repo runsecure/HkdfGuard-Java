@@ -2,12 +2,12 @@ package com.runsecure.hkdfguard.abstractions;
 
 /**
  * Read/write surface of a highly concurrent name -&gt; encrypted-value cache backed by a single
- * IDataProtectionKey. add/addOrUpdate protect and store plaintext under a name; the read surface
- * (decrypt/tryGetMaxDecryptedLength) is inherited from IProtectedReadOnlyCache. Nothing here ever
+ * DataProtectionKey. add/addOrUpdate protect and store plaintext under a name; the read surface
+ * (decrypt/tryGetMaxDecryptedLength) is inherited from ProtectedReadOnlyCache. Nothing here ever
  * holds plaintext beyond the duration of a single add/addOrUpdate call - only the encrypted bytes
  * are retained internally.
  */
-public interface IProtectedCache extends IProtectedReadOnlyCache {
+public interface ProtectedCache extends ProtectedReadOnlyCache {
 
     /**
      * Encrypts plaintext and stores it under name.

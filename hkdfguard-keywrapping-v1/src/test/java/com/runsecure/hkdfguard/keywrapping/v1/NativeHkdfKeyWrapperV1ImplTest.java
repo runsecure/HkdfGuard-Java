@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class NativeHkdfKeyWrapperV1Test {
+class NativeHkdfKeyWrapperV1ImplTest {
 
     /**
      * A fake native library standing in for the real .so/.dylib/.dll, so these tests exercise
-     * NativeHkdfKeyWrapperV1's own logic (status-code handling, AAD rejection) without a native
+     * NativeHkdfKeyWrapperV1Impl's own logic (status-code handling, AAD rejection) without a native
      * dependency.
      */
     private static final class FakeLibrary extends AbstractHkdfGuardKmsLibrary {
@@ -53,7 +53,7 @@ class NativeHkdfKeyWrapperV1Test {
     void encrypt_delegatesToWrapDekAndReturnsBytesWritten() {
         FakeLibrary library = new FakeLibrary();
         library.outputToWrite = new byte[]{1, 2, 3, 4};
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("my-service", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("my-service", library);
 
         byte[] plaintext = new byte[32];
         byte[] result = new byte[16];
@@ -67,7 +67,7 @@ class NativeHkdfKeyWrapperV1Test {
 
     @Test
     void encrypt_withNonEmptyAad_throwsUnsupportedOperationException() {
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("svc", new FakeLibrary());
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", new FakeLibrary());
 
         assertThrows(UnsupportedOperationException.class,
                 () -> sut.encrypt(new byte[32], new byte[64], new byte[]{1}));
@@ -77,7 +77,7 @@ class NativeHkdfKeyWrapperV1Test {
     void encrypt_withNonOkStatus_throwsNativeKmsException() {
         FakeLibrary library = new FakeLibrary();
         library.statusToReturn = -4;
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("svc", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", library);
 
         NativeKmsException exception = assertThrows(NativeKmsException.class,
                 () -> sut.encrypt(new byte[32], new byte[64]));
@@ -88,7 +88,7 @@ class NativeHkdfKeyWrapperV1Test {
     void decrypt_delegatesToUnwrapDekAndReturnsBytesWritten() {
         FakeLibrary library = new FakeLibrary();
         library.outputToWrite = new byte[32];
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("my-service", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("my-service", library);
 
         byte[] wrapped = new byte[64];
         byte[] result = new byte[32];
@@ -100,7 +100,7 @@ class NativeHkdfKeyWrapperV1Test {
 
     @Test
     void decrypt_withNonEmptyAad_throwsUnsupportedOperationException() {
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("svc", new FakeLibrary());
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", new FakeLibrary());
 
         assertThrows(UnsupportedOperationException.class,
                 () -> sut.decrypt(new byte[64], new byte[32], new byte[]{9}));
@@ -110,7 +110,7 @@ class NativeHkdfKeyWrapperV1Test {
     void decrypt_withNonOkStatus_throwsNativeKmsException() {
         FakeLibrary library = new FakeLibrary();
         library.statusToReturn = -6;
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("svc", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", library);
 
         NativeKmsException exception = assertThrows(NativeKmsException.class,
                 () -> sut.decrypt(new byte[64], new byte[32]));
@@ -121,7 +121,7 @@ class NativeHkdfKeyWrapperV1Test {
     void generateAndWrap_delegatesToGenerateAndWrapDekAndReturnsBytesWritten() {
         FakeLibrary library = new FakeLibrary();
         library.outputToWrite = new byte[]{5, 6, 7};
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("my-service", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("my-service", library);
 
         byte[] result = new byte[16];
         int written = sut.generateAndWrap(result);
@@ -134,7 +134,7 @@ class NativeHkdfKeyWrapperV1Test {
     void generateAndWrap_withNonOkStatus_throwsNativeKmsException() {
         FakeLibrary library = new FakeLibrary();
         library.statusToReturn = -3;
-        NativeHkdfKeyWrapperV1 sut = new NativeHkdfKeyWrapperV1("svc", library);
+        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", library);
 
         NativeKmsException exception = assertThrows(NativeKmsException.class,
                 () -> sut.generateAndWrap(new byte[64]));

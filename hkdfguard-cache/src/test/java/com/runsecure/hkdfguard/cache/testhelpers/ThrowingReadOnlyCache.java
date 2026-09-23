@@ -1,14 +1,14 @@
 package com.runsecure.hkdfguard.cache.testhelpers;
 
-import com.runsecure.hkdfguard.abstractions.IProtectedReadOnlyCache;
+import com.runsecure.hkdfguard.abstractions.ProtectedReadOnlyCache;
 
 import java.util.OptionalInt;
 
 /**
- * An IProtectedReadOnlyCache whose every member throws - exercises ProtectedCacheCollection's
+ * An ProtectedReadOnlyCache whose every member throws - exercises ProtectedCacheCollectionImpl's
  * catch blocks without depending on a specific real failure mode.
  */
-public final class ThrowingReadOnlyCache implements IProtectedReadOnlyCache {
+public final class ThrowingReadOnlyCache implements ProtectedReadOnlyCache {
 
     private final RuntimeException exception;
 

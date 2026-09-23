@@ -1,9 +1,9 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
 import com.runsecure.hkdfguard.cache.testhelpers.FakeKeyWrapper;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoSessionProvider;
-import com.runsecure.hkdfguard.dataencryptionkey.KeyWrappedDataEncryptionKey;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
+import com.runsecure.hkdfguard.dataencryptionkey.KeyWrappedDataEncryptionKeyImpl;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.AttributeNames;
 import com.runsecure.hkdfguard.diagnostics.HkdfGuardTelemetry;
@@ -45,7 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ProtectedCacheTest {
+class ProtectedCacheImplTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -55,18 +55,18 @@ class ProtectedCacheTest {
     @Captor
     private ArgumentCaptor<Object> debugArgCaptor;
 
-    private static ProtectedCache createCache() {
+    private static ProtectedCacheImpl createCache() {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        return new ProtectedCache(dataProtectionKey);
+        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+        return new ProtectedCacheImpl(dataProtectionKey);
     }
 
     @Test
     void addDecrypt_bytes_roundTrips() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         byte[] plaintext = "top secret bytes".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
@@ -82,7 +82,7 @@ class ProtectedCacheTest {
 
     @Test
     void addDecrypt_chars_roundTrips() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         String plaintext = "top secret chars";
 
         cache.add("item", plaintext.toCharArray());
@@ -97,7 +97,7 @@ class ProtectedCacheTest {
 
     @Test
     void addDecrypt_chars_handlesMultiByteUtf8() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         String plaintext = "héllo wörld 日本語";
 
         cache.add("item", plaintext.toCharArray());
@@ -111,7 +111,7 @@ class ProtectedCacheTest {
 
     @Test
     void add_bytes_calledTwiceWithSameName_throwsIllegalArgumentException() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.add("item", "first".getBytes(StandardCharsets.UTF_8));
 
@@ -120,7 +120,7 @@ class ProtectedCacheTest {
 
     @Test
     void add_chars_calledTwiceWithSameName_throwsIllegalArgumentException() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.add("item", "first".toCharArray());
 
@@ -129,7 +129,7 @@ class ProtectedCacheTest {
 
     @Test
     void add_bytes_calledTwiceWithDifferentCasedName_throwsIllegalArgumentException() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.add("Item", "first".getBytes(StandardCharsets.UTF_8));
 
@@ -138,7 +138,7 @@ class ProtectedCacheTest {
 
     @Test
     void add_bytes_doesNotReplacePreviousValueWhenDuplicateNameRejected() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         byte[] original = "original".getBytes(StandardCharsets.UTF_8);
         byte[] expected = original.clone();
 
@@ -153,7 +153,7 @@ class ProtectedCacheTest {
 
     @Test
     void addOrUpdate_bytes_calledTwiceWithSameName_replacesPreviousValue() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.addOrUpdate("item", "first".getBytes(StandardCharsets.UTF_8));
         cache.addOrUpdate("item", "second-value".getBytes(StandardCharsets.UTF_8));
@@ -168,7 +168,7 @@ class ProtectedCacheTest {
 
     @Test
     void addOrUpdate_chars_calledTwiceWithSameName_replacesPreviousValue() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.addOrUpdate("item", "first".toCharArray());
         cache.addOrUpdate("item", "second-value".toCharArray());
@@ -182,7 +182,7 @@ class ProtectedCacheTest {
 
     @Test
     void addOrUpdate_afterAdd_replacesPreviousValueWithoutThrowing() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.add("item", "first".getBytes(StandardCharsets.UTF_8));
         assertDoesNotThrow(() -> cache.addOrUpdate("item", "second".getBytes(StandardCharsets.UTF_8)));
@@ -190,7 +190,7 @@ class ProtectedCacheTest {
 
     @Test
     void namesAreCaseInsensitive_acrossAddAndDecrypt() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         byte[] plaintext = "value".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
@@ -205,7 +205,7 @@ class ProtectedCacheTest {
 
     @Test
     void namesAreCaseInsensitive_acrossAddOrUpdate() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         cache.addOrUpdate("Item-Name", "first".getBytes(StandardCharsets.UTF_8));
         cache.addOrUpdate("ITEM-name", "second".getBytes(StandardCharsets.UTF_8));
@@ -219,7 +219,7 @@ class ProtectedCacheTest {
 
     @Test
     void decrypt_bytes_withUnknownName_returnsZero() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         int written = cache.decrypt("missing", new byte[16]);
 
@@ -228,7 +228,7 @@ class ProtectedCacheTest {
 
     @Test
     void decrypt_chars_withUnknownName_returnsZero() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         int written = cache.decrypt("missing", new char[16]);
 
@@ -237,14 +237,14 @@ class ProtectedCacheTest {
 
     @Test
     void tryGetMaxDecryptedLength_withUnknownName_returnsEmpty() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         assertFalse(cache.tryGetMaxDecryptedLength("missing").isPresent());
     }
 
     @Test
     void tryGetMaxDecryptedLength_isSafeUpperBoundForDecrypt() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         byte[] plaintext = "some plaintext value".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
@@ -266,7 +266,7 @@ class ProtectedCacheTest {
         try {
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(true);
 
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
             byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
             byte[] expected = plaintext.clone();
 
@@ -287,7 +287,7 @@ class ProtectedCacheTest {
         try {
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(true);
 
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
             String plaintext = "top secret chars";
 
             cache.addOrUpdate("item", plaintext.toCharArray());
@@ -307,7 +307,7 @@ class ProtectedCacheTest {
         try {
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(true);
 
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
             String plaintext = "top secret chars";
 
             cache.add("item", plaintext.toCharArray());
@@ -327,7 +327,7 @@ class ProtectedCacheTest {
         try {
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(true);
 
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
             byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
             byte[] expected = plaintext.clone();
 
@@ -344,7 +344,7 @@ class ProtectedCacheTest {
 
     @Test
     void decrypt_bytes_withTooSmallResultBuffer_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         cache.add("item", "top secret".getBytes(StandardCharsets.UTF_8));
 
         byte[] tooSmall = new byte[1];
@@ -353,7 +353,7 @@ class ProtectedCacheTest {
 
     @Test
     void decrypt_chars_withTooSmallResultBuffer_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         cache.add("item", "top secret chars".toCharArray());
 
         char[] tooSmall = new char[1];
@@ -362,28 +362,28 @@ class ProtectedCacheTest {
 
     @Test
     void add_bytes_withNullName_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         assertThrows(NullPointerException.class, () -> cache.add(null, "value".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test
     void add_chars_withNullName_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         assertThrows(NullPointerException.class, () -> cache.add(null, "value".toCharArray()));
     }
 
     @Test
     void addOrUpdate_bytes_withNullName_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         assertThrows(NullPointerException.class, () -> cache.addOrUpdate(null, "value".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test
     void addOrUpdate_chars_withNullName_recordsExceptionAndThrows() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
 
         assertThrows(NullPointerException.class, () -> cache.addOrUpdate(null, "value".toCharArray()));
     }
@@ -393,7 +393,7 @@ class ProtectedCacheTest {
         boolean original = HkdfGuardTelemetry.CACHE.isEnableSensitiveLogging();
         try {
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(true);
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
 
             int written = cache.decrypt("missing", new byte[16]);
 
@@ -405,7 +405,7 @@ class ProtectedCacheTest {
 
     @Test
     void concurrentAddAndDecrypt_acrossManyNames_allRoundTrip() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         int itemCount = 200;
 
         IntStream.range(0, itemCount).parallel().forEach(i ->
@@ -422,7 +422,7 @@ class ProtectedCacheTest {
 
     @Test
     void concurrentAdd_withSameName_exactlyOneSucceeds() {
-        ProtectedCache cache = createCache();
+        ProtectedCacheImpl cache = createCache();
         int attemptCount = 50;
         AtomicInteger succeeded = new AtomicInteger();
 
@@ -443,9 +443,9 @@ class ProtectedCacheTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        ProtectedCache cache = new ProtectedCache(dataProtectionKey, null);
+        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, null);
 
         assertDoesNotThrow(() -> cache.add("item", "value".getBytes(StandardCharsets.UTF_8)));
     }
@@ -459,9 +459,9 @@ class ProtectedCacheTest {
             byte[] key = new byte[32];
             RANDOM.nextBytes(key);
             FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-            IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                    new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-            ProtectedCache cache = new ProtectedCache(dataProtectionKey, logger);
+            DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                    new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+            ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, logger);
 
             cache.add("item", "value".getBytes(StandardCharsets.UTF_8));
 
@@ -479,9 +479,9 @@ class ProtectedCacheTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        ProtectedCache cache = new ProtectedCache(dataProtectionKey, logger);
+        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, logger);
         cache.add("item", "first".getBytes(StandardCharsets.UTF_8));
 
         assertThrows(IllegalArgumentException.class, () -> cache.add("item", "second".getBytes(StandardCharsets.UTF_8)));
@@ -514,7 +514,7 @@ class ProtectedCacheTest {
 
         @Test
         void add_incrementsCacheOperationsCounter_onSuccessAndFailure() {
-            ProtectedCache cache = createCache();
+            ProtectedCacheImpl cache = createCache();
             cache.add("item", "value".getBytes(StandardCharsets.UTF_8));
             assertThrows(IllegalArgumentException.class, () -> cache.add("item", "value".getBytes(StandardCharsets.UTF_8)));
 

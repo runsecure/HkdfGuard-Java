@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.abstractions;
 
-public interface IEncryptedFormatProvider {
+public interface EncryptedFormatProvider {
 
     String format(KeyTrackingValue value);
 

@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.keywrapping.v1;
 
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 
 /**
  * Protects (encrypt) a fresh DEK, or reveals (decrypt) a previously-wrapped one, via the current
@@ -13,18 +13,18 @@ import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
  * concept of AAD, so the 3-arg overloads accept only an empty aad; anything else throws
  * UnsupportedOperationException.
  */
-public final class NativeHkdfKeyWrapperV1 implements IKeyWrapper {
+public final class NativeHkdfKeyWrapperV1Impl implements KeyWrapper {
 
     private static final byte[] EMPTY_AAD = new byte[0];
 
     private final String serviceName;
     private final AbstractHkdfGuardKmsLibrary library;
 
-    public NativeHkdfKeyWrapperV1(String serviceName) {
+    public NativeHkdfKeyWrapperV1Impl(String serviceName) {
         this(serviceName, NativeHost.getLibrary());
     }
 
-    NativeHkdfKeyWrapperV1(String serviceName, AbstractHkdfGuardKmsLibrary library) {
+    NativeHkdfKeyWrapperV1Impl(String serviceName, AbstractHkdfGuardKmsLibrary library) {
         this.serviceName = serviceName;
         this.library = library;
     }
@@ -76,7 +76,7 @@ public final class NativeHkdfKeyWrapperV1 implements IKeyWrapper {
     private static void requireEmptyAad(byte[] aad) {
         if (aad != null && aad.length > 0) {
             throw new UnsupportedOperationException(
-                    "NativeHkdfKeyWrapperV1's native KMS library has no concept of additional authenticated data.");
+                    "NativeHkdfKeyWrapperV1Impl's native KMS library has no concept of additional authenticated data.");
         }
     }
 }

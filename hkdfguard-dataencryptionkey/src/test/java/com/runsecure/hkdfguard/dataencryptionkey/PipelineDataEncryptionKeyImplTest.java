@@ -1,8 +1,8 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoSessionProvider;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AuthenticationTagMismatchException;
 import org.junit.jupiter.api.Test;
 
@@ -17,16 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class PipelineDataEncryptionKeyTest {
+class PipelineDataEncryptionKeyImplTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> SESSION_PROVIDER_FACTORY =
-            (keyWrapper, wrapped) -> new AesGcmCryptoSessionProvider(keyWrapper, wrapped, 60);
+    private static final BiFunction<KeyWrapper, byte[], CryptoProvider> SESSION_PROVIDER_FACTORY =
+            (keyWrapper, wrapped) -> new AesGcmCryptoProviderImpl(keyWrapper, wrapped, 60);
 
     @Test
     void constructor_withNoDekSupplied_generatesARandom32ByteDek() {
-        try (PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             assertEquals(32, key.asBytes().length);
 
             boolean allZero = true;
@@ -42,8 +42,8 @@ class PipelineDataEncryptionKeyTest {
 
     @Test
     void constructor_withNoDekSupplied_generatesADifferentDekEachTime() {
-        try (PipelineDataEncryptionKey key1 = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY);
-             PipelineDataEncryptionKey key2 = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key1 = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY);
+             PipelineDataEncryptionKeyImpl key2 = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             assertNotEquals(Arrays.toString(key1.asBytes()), Arrays.toString(key2.asBytes()));
         }
     }
@@ -54,26 +54,26 @@ class PipelineDataEncryptionKeyTest {
         RANDOM.nextBytes(dek);
         byte[] expected = dek.clone();
 
-        try (PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(dek, SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(dek, SESSION_PROVIDER_FACTORY)) {
             assertArrayEquals(expected, key.asBytes());
         }
     }
 
     @Test
     void constructor_withEmptyDek_throws() {
-        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKey(new byte[32], SESSION_PROVIDER_FACTORY));
+        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKeyImpl(new byte[32], SESSION_PROVIDER_FACTORY));
     }
 
     @Test
     void constructor_withWrongSizeDek_throws() {
         byte[] wrongSize = new byte[16];
         RANDOM.nextBytes(wrongSize);
-        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKey(wrongSize, SESSION_PROVIDER_FACTORY));
+        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKeyImpl(wrongSize, SESSION_PROVIDER_FACTORY));
     }
 
     @Test
     void encryptDecrypt_roundTrips() {
-        try (PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
             byte[] expected = plaintext.clone();
 
@@ -88,7 +88,7 @@ class PipelineDataEncryptionKeyTest {
 
     @Test
     void encryptDecrypt_withAad_roundTrips() {
-        try (PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
             byte[] expected = plaintext.clone();
             byte[] aad = "context".getBytes(StandardCharsets.UTF_8);
@@ -103,7 +103,7 @@ class PipelineDataEncryptionKeyTest {
 
     @Test
     void decrypt_withMismatchedAad_throws() {
-        try (PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             byte[] encrypted = key.encrypt("top secret".getBytes(StandardCharsets.UTF_8), "context-a".getBytes(StandardCharsets.UTF_8));
 
             assertThrows(AuthenticationTagMismatchException.class,
@@ -113,8 +113,8 @@ class PipelineDataEncryptionKeyTest {
 
     @Test
     void twoInstances_withDifferentGeneratedDeks_cannotDecryptEachOthersCiphertext() {
-        try (PipelineDataEncryptionKey key1 = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY);
-             PipelineDataEncryptionKey key2 = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY)) {
+        try (PipelineDataEncryptionKeyImpl key1 = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY);
+             PipelineDataEncryptionKeyImpl key2 = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY)) {
             byte[] encrypted = key1.encrypt("top secret".getBytes(StandardCharsets.UTF_8));
 
             assertThrows(AuthenticationTagMismatchException.class, () -> key2.decrypt(encrypted, new byte[16]));
@@ -123,7 +123,7 @@ class PipelineDataEncryptionKeyTest {
 
     @Test
     void close_zeroesTheDek() {
-        PipelineDataEncryptionKey key = new PipelineDataEncryptionKey(SESSION_PROVIDER_FACTORY);
+        PipelineDataEncryptionKeyImpl key = new PipelineDataEncryptionKeyImpl(SESSION_PROVIDER_FACTORY);
 
         key.close();
 

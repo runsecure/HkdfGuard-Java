@@ -1,10 +1,10 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
 import com.runsecure.hkdfguard.cache.testhelpers.FakeKeyWrapper;
 import com.runsecure.hkdfguard.cache.testhelpers.PopulatingCache;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoSessionProvider;
-import com.runsecure.hkdfguard.dataencryptionkey.KeyWrappedDataEncryptionKey;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
+import com.runsecure.hkdfguard.dataencryptionkey.KeyWrappedDataEncryptionKeyImpl;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -23,8 +23,8 @@ class ProtectedCacheBaseTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
         return new PopulatingCache(dataProtectionKey);
     }
 
@@ -101,8 +101,8 @@ class ProtectedCacheBaseTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        IDataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKey(
-                new AesGcmCryptoSessionProvider(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
+        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+                new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
         PopulatingCache cache = new PopulatingCache(dataProtectionKey);
         cache.setOnTryPopulate(null);
 

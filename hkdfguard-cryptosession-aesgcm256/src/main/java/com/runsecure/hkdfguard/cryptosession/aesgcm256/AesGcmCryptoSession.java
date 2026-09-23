@@ -1,7 +1,6 @@
 package com.runsecure.hkdfguard.cryptosession.aesgcm256;
 
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
-import com.runsecure.hkdfguard.abstractions.ICryptoSession;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
 import com.runsecure.hkdfguard.diagnostics.AttributeNames;
 import com.runsecure.hkdfguard.diagnostics.ComponentTelemetry;
@@ -15,25 +14,25 @@ import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Arrays;
 
 /**
- * An ICryptoSession backed by a single 32-byte AES-256 key, supplied once at construction. This
- * instance is meant to be held for a while - see getExpiresAt/ICryptoSessionProvider - and closed
- * (zeroing the key) once no longer needed rather than rebuilt on every operation.
+ * An AES-256-GCM cipher session backed by a single 32-byte key, supplied once at construction.
+ * This instance is meant to be held for a while - see AesGcmCryptoProviderImpl - and closed (zeroing
+ * the key) once no longer needed rather than rebuilt on every operation. Session lifetime/expiry
+ * is entirely owned by AesGcmCryptoProviderImpl; this type just holds a key and encrypts/decrypts
+ * with it until closed.
  *
  * <p>Unlike the C# original, which builds one native AesGcm instance in the constructor and
  * reuses it for every call, this port builds a fresh BouncyCastle {@link GCMModeCipher} per
  * encrypt/decrypt call. BouncyCastle's lightweight cipher objects are stateful across their
  * init/processBytes/doFinal sequence and are not safe for concurrent use by multiple threads on
- * one instance - which a single AesGcmCryptoSession can be, since ICryptoSessionProvider.
- * getSession() hands the same instance to any number of concurrent callers. The one genuinely
- * expensive, worth-reusing part - the AES key schedule - BouncyCastle recomputes on every
- * {@code init()} regardless of whether the engine object itself is reused, so nothing is lost by
- * building fresh per call.
+ * one instance - which a single AesGcmCryptoSession can be, since AesGcmCryptoProviderImpl hands the
+ * same instance to any number of concurrent callers. The one genuinely expensive, worth-reusing
+ * part - the AES key schedule - BouncyCastle recomputes on every {@code init()} regardless of
+ * whether the engine object itself is reused, so nothing is lost by building fresh per call.
  */
-final class AesGcmCryptoSession implements ICryptoSession {
+final class AesGcmCryptoSession implements AutoCloseable {
 
     private static final int TAG_SIZE = 16;
     private static final int NONCE_SIZE = 12;
@@ -43,19 +42,15 @@ final class AesGcmCryptoSession implements ICryptoSession {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final byte[] key;
-    private final Instant expiresAt;
 
     private volatile boolean disposed;
 
     /**
      * @param key The 32-byte AES-256 key this session encrypts/decrypts with - ownership
      *     transfers to this instance, which zeroes it on close.
-     * @param expirySeconds How many seconds from now this session should be treated as valid for
-     *     (see getExpiresAt) - not validated here, since this type is package-private and its
-     *     only caller (AesGcmCryptoSessionProvider) already validates it.
      * @throws IllegalArgumentException key is empty/all-zero, or not exactly 32 bytes
      */
-    AesGcmCryptoSession(byte[] key, int expirySeconds) {
+    AesGcmCryptoSession(byte[] key) {
         if (ArrayUtility.isNullOrEmpty(key)) {
             throw new IllegalArgumentException("AES key must not be empty or all zero.");
         }
@@ -64,21 +59,13 @@ final class AesGcmCryptoSession implements ICryptoSession {
         }
 
         this.key = key;
-        this.expiresAt = Instant.now().plusSeconds(expirySeconds);
     }
 
-    @Override
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    @Override
-    public int encrypt(byte[] plaintext, byte[] result) {
+    int encrypt(byte[] plaintext, byte[] result) {
         return encrypt(plaintext, EMPTY_AAD, result);
     }
 
-    @Override
-    public int encrypt(byte[] plaintext, byte[] aad, byte[] result) {
+    int encrypt(byte[] plaintext, byte[] aad, byte[] result) {
         ComponentTelemetry telemetry = HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256;
         Span span = telemetry.getTracer().spanBuilder(ActivityNames.CryptoSessionAesGcm256.ENCRYPT).startSpan();
         try {
@@ -132,13 +119,11 @@ final class AesGcmCryptoSession implements ICryptoSession {
         return NONCE_SIZE + written;
     }
 
-    @Override
-    public int decrypt(byte[] ciphertext, byte[] result) {
+    int decrypt(byte[] ciphertext, byte[] result) {
         return decrypt(ciphertext, EMPTY_AAD, result);
     }
 
-    @Override
-    public int decrypt(byte[] ciphertext, byte[] aad, byte[] result) {
+    int decrypt(byte[] ciphertext, byte[] aad, byte[] result) {
         ComponentTelemetry telemetry = HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256;
         Span span = telemetry.getTracer().spanBuilder(ActivityNames.CryptoSessionAesGcm256.DECRYPT).startSpan();
         try {

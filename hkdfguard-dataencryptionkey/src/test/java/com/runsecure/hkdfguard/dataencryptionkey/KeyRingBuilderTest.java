@@ -1,9 +1,9 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.ICryptoSessionProvider;
-import com.runsecure.hkdfguard.abstractions.IDataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.IKeyWrapper;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoSessionProvider;
+import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.KeyWrapper;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
 import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.FakeKeyWrapper;
 import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.RecordingFormatProvider;
 import org.junit.jupiter.api.Test;
@@ -26,8 +26,8 @@ class KeyRingBuilderTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final BiFunction<IKeyWrapper, byte[], ICryptoSessionProvider> SESSION_PROVIDER_FACTORY =
-            (keyWrapper, wrapped) -> new AesGcmCryptoSessionProvider(keyWrapper, wrapped, 60);
+    private static final BiFunction<KeyWrapper, byte[], CryptoProvider> SESSION_PROVIDER_FACTORY =
+            (keyWrapper, wrapped) -> new AesGcmCryptoProviderImpl(keyWrapper, wrapped, 60);
 
     private static FakeKeyWrapper randomWrapper() {
         byte[] key = new byte[32];
@@ -147,7 +147,7 @@ class KeyRingBuilderTest {
                 .withEphemeralKey(1)
                 .build();
 
-        IDataProtectionKey key = ring.get(1);
+        DataProtectionKey key = ring.get(1);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
