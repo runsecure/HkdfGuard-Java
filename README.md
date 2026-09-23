@@ -213,7 +213,7 @@ public class PipelineExample {
 
 HkdfGuard includes built-in OpenTelemetry instrumentation for operations across all modules.
 
-- **Component Telemetry**: Rooted under `HkdfGuardTelemetry` (`ROOT`, `CACHE`, `DATA_PROTECTION`, `CRYPTO_SESSION_AES_GCM256`, `KEY_WRAPPING`).
+- **Component Telemetry**: Rooted under `HkdfGuardTelemetry` (`ROOT`, `CACHE`, `DATA_PROTECTION`, `ENCRYPTED_CONFIGURATION`, `CRYPTO_SESSION_AES_GCM256`, `KEY_WRAPPING`) - `ENCRYPTED_CONFIGURATION` mirrors the .NET diagnostics naming ahead of a Java `EncryptedConfiguration` module actually existing yet.
 - **Sensitive Data Redaction**: By default, sensitive attributes and operations are omitted or redacted in traces and logs unless explicitly enabled via `ComponentTelemetry.setEnableSensitiveLogging(true)`.
 - **Metrics**: Standard cache hit/miss/operation metrics recorded via `CacheMetrics`.
 
