@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.function.BiFunction;
 
 /**
- * An DataProtectionKey whose own DEK is never read from a file on disk - keyWrapper generates
+ * A DataProtectionKey whose own DEK is never read from a file on disk - keyWrapper generates
  * and immediately wraps a fresh one in the constructor (see KeyWrapper.generateAndWrap); the
  * plaintext DEK itself never crosses that call's return value. sessionProviderFactory then binds
  * a CryptoProvider to that wrapped payload (this class can't construct one directly - a

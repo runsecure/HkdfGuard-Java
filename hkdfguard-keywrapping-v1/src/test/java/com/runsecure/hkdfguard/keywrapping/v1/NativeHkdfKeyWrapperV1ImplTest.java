@@ -10,8 +10,7 @@ class NativeHkdfKeyWrapperV1ImplTest {
 
     /**
      * A fake native library standing in for the real .so/.dylib/.dll, so these tests exercise
-     * NativeHkdfKeyWrapperV1Impl's own logic (status-code handling, AAD rejection) without a native
-     * dependency.
+     * NativeHkdfKeyWrapperV1Impl's own logic (status-code handling) without a native dependency.
      */
     private static final class FakeLibrary extends AbstractHkdfGuardKmsLibrary {
         String lastService;
@@ -66,14 +65,6 @@ class NativeHkdfKeyWrapperV1ImplTest {
     }
 
     @Test
-    void encrypt_withNonEmptyAad_throwsUnsupportedOperationException() {
-        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", new FakeLibrary());
-
-        assertThrows(UnsupportedOperationException.class,
-                () -> sut.encrypt(new byte[32], new byte[64], new byte[]{1}));
-    }
-
-    @Test
     void encrypt_withNonOkStatus_throwsNativeKmsException() {
         FakeLibrary library = new FakeLibrary();
         library.statusToReturn = -4;
@@ -96,14 +87,6 @@ class NativeHkdfKeyWrapperV1ImplTest {
 
         assertEquals(32, written);
         assertEquals(wrapped, library.lastInput);
-    }
-
-    @Test
-    void decrypt_withNonEmptyAad_throwsUnsupportedOperationException() {
-        NativeHkdfKeyWrapperV1Impl sut = new NativeHkdfKeyWrapperV1Impl("svc", new FakeLibrary());
-
-        assertThrows(UnsupportedOperationException.class,
-                () -> sut.decrypt(new byte[64], new byte[32], new byte[]{9}));
     }
 
     @Test

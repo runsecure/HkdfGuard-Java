@@ -45,7 +45,7 @@ public final class Base64ConversionUtility {
      * @throws IllegalArgumentException base64's length is not a multiple of 4
      */
     public static int getBinaryLength(CharSequence base64) {
-        if (base64.length() == 0) {
+        if (base64.isEmpty()) {
             return 0;
         }
         if (base64.length() % 4 != 0) {

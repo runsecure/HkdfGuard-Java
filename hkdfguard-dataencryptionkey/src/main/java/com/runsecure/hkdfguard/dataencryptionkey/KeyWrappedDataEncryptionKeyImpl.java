@@ -11,7 +11,7 @@ import io.opentelemetry.api.trace.Span;
 import java.util.Arrays;
 
 /**
- * An DataProtectionKey backed by one wrapped DEK payload. provider owns revealing that payload's
+ * A DataProtectionKey backed by one wrapped DEK payload. provider owns revealing that payload's
  * key (from a fresh unwrap, on its own internal refresh schedule) and performing the actual data
  * encrypt/decrypt with it - see CryptoProvider.
  */

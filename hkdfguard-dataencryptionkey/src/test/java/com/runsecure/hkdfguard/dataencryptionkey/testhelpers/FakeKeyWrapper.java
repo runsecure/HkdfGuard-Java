@@ -3,7 +3,7 @@ package com.runsecure.hkdfguard.dataencryptionkey.testhelpers;
 import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 
 /**
- * An KeyWrapper that always reveals/generates the same fixed key, tracking how many times
+ * A KeyWrapper that always reveals/generates the same fixed key, tracking how many times
  * decrypt/generateAndWrap were called - isolates
  * KeyWrappedDataEncryptionKeyImpl/EphemeralDataEncryptionKeyImpl/KeyRing tests from the real native KMS
  * machinery while still exercising real AES-GCM via a real CryptoProvider.
@@ -43,11 +43,6 @@ public final class FakeKeyWrapper implements KeyWrapper {
     }
 
     @Override
-    public int encrypt(byte[] plaintext, byte[] result, byte[] aad) {
-        throw new UnsupportedOperationException("FakeKeyWrapper only supports decrypt.");
-    }
-
-    @Override
     public int decrypt(byte[] wrapped, byte[] result) {
         decryptCallCount++;
         if (throwOnDecrypt != null) {
@@ -56,11 +51,6 @@ public final class FakeKeyWrapper implements KeyWrapper {
 
         System.arraycopy(key, 0, result, 0, key.length);
         return key.length;
-    }
-
-    @Override
-    public int decrypt(byte[] wrapped, byte[] result, byte[] aad) {
-        return decrypt(wrapped, result);
     }
 
     @Override

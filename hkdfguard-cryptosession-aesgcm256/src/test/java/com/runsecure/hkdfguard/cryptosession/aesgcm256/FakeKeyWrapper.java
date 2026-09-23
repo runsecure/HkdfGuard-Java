@@ -5,7 +5,7 @@ import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import java.security.SecureRandom;
 
 /**
- * An KeyWrapper that always reveals a fresh random key, tracking how many times decrypt was
+ * A KeyWrapper that always reveals a fresh random key, tracking how many times decrypt was
  * called - isolates AesGcmCryptoProviderImpl tests from any real native KMS machinery.
  */
 final class FakeKeyWrapper implements KeyWrapper {
@@ -31,11 +31,6 @@ final class FakeKeyWrapper implements KeyWrapper {
     }
 
     @Override
-    public int encrypt(byte[] plaintext, byte[] result, byte[] aad) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int decrypt(byte[] wrapped, byte[] result) {
         decryptCallCount++;
         if (throwOnDecrypt != null) {
@@ -44,11 +39,6 @@ final class FakeKeyWrapper implements KeyWrapper {
 
         RANDOM.nextBytes(result);
         return result.length;
-    }
-
-    @Override
-    public int decrypt(byte[] wrapped, byte[] result, byte[] aad) {
-        return decrypt(wrapped, result);
     }
 
     @Override

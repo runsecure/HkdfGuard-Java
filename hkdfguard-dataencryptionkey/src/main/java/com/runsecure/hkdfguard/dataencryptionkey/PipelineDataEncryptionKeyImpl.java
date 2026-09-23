@@ -13,7 +13,7 @@ import java.security.SecureRandom;
 import java.util.function.BiFunction;
 
 /**
- * An DataProtectionKey backed by a plain 32-byte DEK, used directly - never wrapped, never
+ * A DataProtectionKey backed by a plain 32-byte DEK, used directly - never wrapped, never
  * unwrapped. Meant for a pipeline that needs to encrypt secrets in-flight before a durable KEK
  * exists yet: construct one (generating a fresh random DEK, or supplying an existing one),
  * encrypt whatever needs protecting during the pipeline, then read the same plaintext DEK back
@@ -125,19 +125,9 @@ public final class PipelineDataEncryptionKeyImpl implements DataProtectionKey, A
         }
 
         @Override
-        public int encrypt(byte[] plaintext, byte[] result, byte[] aad) {
-            throw new UnsupportedOperationException("IdentityKeyWrapperImpl only supports decrypt.");
-        }
-
-        @Override
         public int decrypt(byte[] wrapped, byte[] result) {
             System.arraycopy(wrapped, 0, result, 0, wrapped.length);
             return wrapped.length;
-        }
-
-        @Override
-        public int decrypt(byte[] wrapped, byte[] result, byte[] aad) {
-            return decrypt(wrapped, result);
         }
 
         @Override

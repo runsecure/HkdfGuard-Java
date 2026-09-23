@@ -19,16 +19,6 @@ public interface KeyWrapper {
     int encrypt(byte[] plaintext, byte[] result);
 
     /**
-     * Protects an encryption key
-     *
-     * @param plaintext The plain bytes to encrypt
-     * @param result The encrypted key
-     * @param aad Additional Auth Data for the encrypt operation
-     * @return Number of bytes written to the result
-     */
-    int encrypt(byte[] plaintext, byte[] result, byte[] aad);
-
-    /**
      * Reveals a previously-wrapped key
      *
      * @param wrapped The wrapped key to reveal
@@ -36,16 +26,6 @@ public interface KeyWrapper {
      * @return Number of bytes written to the result
      */
     int decrypt(byte[] wrapped, byte[] result);
-
-    /**
-     * Reveals a previously-wrapped key
-     *
-     * @param wrapped The wrapped key to reveal
-     * @param result The decrypted key array
-     * @param aad Additional Auth Data for decrypting the key
-     * @return Number of bytes written to the result
-     */
-    int decrypt(byte[] wrapped, byte[] result, byte[] aad);
 
     /**
      * Generates a fresh key and immediately protects it against the same KEK this instance
