@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.function.BiFunction;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,7 +101,7 @@ class KeyRingBuilderTest {
     @Test
     void build_withKeyFile_registersVersionFromFile(@TempDir Path tempDir) throws IOException {
         Path path = tempDir.resolve("key1");
-        Files.write(path, "wrapped".getBytes(StandardCharsets.UTF_8));
+        Files.writeString(path, "wrapped");
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
@@ -115,8 +116,8 @@ class KeyRingBuilderTest {
     void build_withMultipleKeyFiles_highestVersionBecomesCurrent(@TempDir Path tempDir) throws IOException {
         Path path1 = tempDir.resolve("key1");
         Path path2 = tempDir.resolve("key2");
-        Files.write(path1, "wrapped-v1".getBytes(StandardCharsets.UTF_8));
-        Files.write(path2, "wrapped-v2".getBytes(StandardCharsets.UTF_8));
+        Files.writeString(path1, "wrapped-v1");
+        Files.writeString(path2, "wrapped-v2");
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
@@ -156,12 +157,13 @@ class KeyRingBuilderTest {
         int written = key.decrypt(encrypted, decrypted);
 
         assertEquals(expected.length, written);
+        assertArrayEquals(expected, decrypted);
     }
 
     @Test
     void build_withKeyFileAndHigherVersionEphemeralKey_ephemeralBecomesCurrent(@TempDir Path tempDir) throws IOException {
         Path path = tempDir.resolve("key1");
-        Files.write(path, "wrapped".getBytes(StandardCharsets.UTF_8));
+        Files.writeString(path, "wrapped");
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())

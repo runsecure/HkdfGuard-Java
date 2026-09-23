@@ -13,13 +13,14 @@ class AesGcmCryptoProviderImplTest {
     void constructor_buildsInitialSessionEagerly() {
         FakeKeyWrapper wrapper = new FakeKeyWrapper();
 
-        try (AesGcmCryptoProviderImpl provider =
+        try (AesGcmCryptoProviderImpl ignored =
                      new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60)) {
             assertEquals(1, wrapper.getDecryptCallCount());
         }
     }
 
     @Test
+    @SuppressWarnings("resource")
     void constructor_whenKeyWrapperFails_throws() {
         FakeKeyWrapper wrapper = new FakeKeyWrapper();
         wrapper.setThrowOnDecrypt(new IllegalStateException("reveal failed"));
@@ -29,6 +30,7 @@ class AesGcmCryptoProviderImplTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void constructor_withExpirySecondsOutOfRange_throwsIllegalArgumentException() {
         FakeKeyWrapper wrapper = new FakeKeyWrapper();
 
@@ -41,7 +43,7 @@ class AesGcmCryptoProviderImplTest {
     @Test
     void backgroundTask_proactivelyRefreshesTheSessionWithoutAnyEncryptOrDecryptCall() throws InterruptedException {
         FakeKeyWrapper wrapper = new FakeKeyWrapper();
-        try (AesGcmCryptoProviderImpl provider =
+        try (AesGcmCryptoProviderImpl ignored =
                      new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 1)) {
             // No encrypt/decrypt call at all - only the constructor's eager build
             // (decryptCallCount == 1) and the background task, ticking every expirySeconds,

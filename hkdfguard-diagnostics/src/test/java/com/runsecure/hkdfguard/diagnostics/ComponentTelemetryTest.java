@@ -18,13 +18,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ComponentTelemetryTest {
 
     private InMemorySpanExporter spanExporter;
+    private OpenTelemetrySdk openTelemetrySdk;
 
     static Stream<ComponentTelemetry> allComponents() {
         return Stream.of(
@@ -40,7 +39,7 @@ class ComponentTelemetryTest {
     void setUp() {
         GlobalOpenTelemetry.resetForTest();
         spanExporter = InMemorySpanExporter.create();
-        OpenTelemetrySdk.builder()
+        openTelemetrySdk = OpenTelemetrySdk.builder()
                 .setTracerProvider(SdkTracerProvider.builder()
                         .addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
                         .build())
@@ -49,13 +48,17 @@ class ComponentTelemetryTest {
 
     @AfterEach
     void tearDown() {
+        if (openTelemetrySdk != null) {
+            openTelemetrySdk.close();
+        }
         GlobalOpenTelemetry.resetForTest();
     }
 
     @ParameterizedTest
     @MethodSource("allComponents")
     void tracerAndMeter_sourceNameIsStable(ComponentTelemetry component) {
-        assertEquals(component.getSourceName(), component.getSourceName());
+        assertNotNull(component.getSourceName());
+        assertFalse(component.getSourceName().isEmpty());
         assertDoesNotThrow(component::getTracer);
         assertDoesNotThrow(component::getMeter);
     }
@@ -138,9 +141,9 @@ class ComponentTelemetryTest {
             assertTrue(HkdfGuardTelemetry.ENCRYPTED_CONFIGURATION.isEnableSensitiveLogging());
 
             HkdfGuardTelemetry.CACHE.setEnableSensitiveLogging(false);
-            assertTrue(!HkdfGuardTelemetry.ROOT.isEnableSensitiveLogging());
-            assertTrue(!HkdfGuardTelemetry.DATA_PROTECTION.isEnableSensitiveLogging());
-            assertTrue(!HkdfGuardTelemetry.ENCRYPTED_CONFIGURATION.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.ROOT.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.DATA_PROTECTION.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.ENCRYPTED_CONFIGURATION.isEnableSensitiveLogging());
         } finally {
             HkdfGuardTelemetry.ROOT.setEnableSensitiveLogging(original);
         }
@@ -156,11 +159,11 @@ class ComponentTelemetryTest {
             HkdfGuardTelemetry.KEY_WRAPPING.setEnableSensitiveLogging(false);
 
             HkdfGuardTelemetry.ROOT.setEnableSensitiveLogging(true);
-            assertTrue(!HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256.isEnableSensitiveLogging());
-            assertTrue(!HkdfGuardTelemetry.KEY_WRAPPING.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.KEY_WRAPPING.isEnableSensitiveLogging());
 
             HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256.setEnableSensitiveLogging(true);
-            assertTrue(!HkdfGuardTelemetry.KEY_WRAPPING.isEnableSensitiveLogging());
+            assertFalse(HkdfGuardTelemetry.KEY_WRAPPING.isEnableSensitiveLogging());
         } finally {
             HkdfGuardTelemetry.ROOT.setEnableSensitiveLogging(originalRoot);
             HkdfGuardTelemetry.CRYPTO_SESSION_AES_GCM256.setEnableSensitiveLogging(originalCryptoSession);

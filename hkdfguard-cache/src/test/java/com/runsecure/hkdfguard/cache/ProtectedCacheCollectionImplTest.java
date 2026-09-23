@@ -148,6 +148,7 @@ class ProtectedCacheCollectionImplTest {
         OptionalInt expectedMaxLength = first.tryGetMaxDecryptedLength("item");
         OptionalInt maxLength = collection.tryGetMaxDecryptedLength("item");
 
+        assertTrue(expectedMaxLength.isPresent());
         assertTrue(maxLength.isPresent());
         assertEquals(expectedMaxLength.getAsInt(), maxLength.getAsInt());
     }

@@ -60,15 +60,15 @@ class PipelineDataEncryptionKeyImplTest {
     }
 
     @Test
+    @SuppressWarnings("resource")
     void constructor_withEmptyDek_throws() {
         assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKeyImpl(new byte[32], SESSION_PROVIDER_FACTORY));
     }
 
     @Test
+    @SuppressWarnings("resource")
     void constructor_withWrongSizeDek_throws() {
-        byte[] wrongSize = new byte[16];
-        RANDOM.nextBytes(wrongSize);
-        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKeyImpl(wrongSize, SESSION_PROVIDER_FACTORY));
+        assertThrows(IllegalArgumentException.class, () -> new PipelineDataEncryptionKeyImpl(new byte[16], SESSION_PROVIDER_FACTORY));
     }
 
     @Test

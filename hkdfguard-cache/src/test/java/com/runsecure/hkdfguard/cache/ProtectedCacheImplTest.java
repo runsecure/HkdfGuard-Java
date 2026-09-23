@@ -35,12 +35,7 @@ import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
@@ -159,6 +154,7 @@ class ProtectedCacheImplTest {
         cache.addOrUpdate("item", "second-value".getBytes(StandardCharsets.UTF_8));
 
         OptionalInt maxLength = cache.tryGetMaxDecryptedLength("item");
+        assertTrue(maxLength.isPresent());
         byte[] result = new byte[maxLength.getAsInt()];
         int written = cache.decrypt("item", result);
 
@@ -211,6 +207,7 @@ class ProtectedCacheImplTest {
         cache.addOrUpdate("ITEM-name", "second".getBytes(StandardCharsets.UTF_8));
 
         OptionalInt maxLength = cache.tryGetMaxDecryptedLength("item-name");
+        assertTrue(maxLength.isPresent());
         byte[] result = new byte[maxLength.getAsInt()];
         int written = cache.decrypt("item-name", result);
 
@@ -413,6 +410,7 @@ class ProtectedCacheImplTest {
 
         IntStream.range(0, itemCount).parallel().forEach(i -> {
             OptionalInt maxLength = cache.tryGetMaxDecryptedLength("item-" + i);
+            assertTrue(maxLength.isPresent());
             byte[] result = new byte[maxLength.getAsInt()];
             int written = cache.decrypt("item-" + i, result);
             assertTrue(written > 0);
@@ -488,19 +486,20 @@ class ProtectedCacheImplTest {
 
         ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
         verify(logger).error(any(String.class), any(String.class), exceptionCaptor.capture());
-        assertTrue(exceptionCaptor.getValue() instanceof IllegalArgumentException);
+        assertInstanceOf(IllegalArgumentException.class, exceptionCaptor.getValue());
     }
 
     @Nested
     class MetricsTest {
 
         private InMemoryMetricReader metricReader;
+        private OpenTelemetrySdk openTelemetrySdk;
 
         @BeforeEach
         void setUp() {
             GlobalOpenTelemetry.resetForTest();
             metricReader = InMemoryMetricReader.create();
-            OpenTelemetrySdk.builder()
+            openTelemetrySdk = OpenTelemetrySdk.builder()
                     .setMeterProvider(SdkMeterProvider.builder()
                             .registerMetricReader(metricReader)
                             .build())
@@ -509,6 +508,9 @@ class ProtectedCacheImplTest {
 
         @AfterEach
         void tearDown() {
+            if (openTelemetrySdk != null) {
+                openTelemetrySdk.close();
+            }
             GlobalOpenTelemetry.resetForTest();
         }
 
