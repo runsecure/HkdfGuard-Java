@@ -1,5 +1,6 @@
 package com.runsecure.hkdfguard.cryptosession.aesgcm256;
 
+import com.runsecure.hkdfguard.abstractions.ArrayUtility;
 import com.runsecure.hkdfguard.abstractions.CryptoProvider;
 import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 public final class AesGcmCryptoProviderImpl implements CryptoProvider {
 
     private static final int KEY_LENGTH = 32;
+    private static final int EXTRA_ALLOCATION_LENGTH = AesGcmCryptoSession.NONCE_SIZE + AesGcmCryptoSession.TAG_SIZE;
 
     private static final ThreadFactory DAEMON_THREAD_FACTORY = runnable -> {
         Thread thread = new Thread(runnable, "hkdfguard-aesgcm256-refresh");
@@ -63,6 +65,22 @@ public final class AesGcmCryptoProviderImpl implements CryptoProvider {
         refreshExecutor.scheduleAtFixedRate(this::backgroundRefresh, expirySeconds, expirySeconds, TimeUnit.SECONDS);
     }
 
+    /**
+     * Builds a provider around notWrapped directly - notWrapped is already a plaintext DEK,
+     * never wrapped or unwrapped through keyWrapper (which this constructor holds only so
+     * close's zeroing symmetry with the wrapped case still applies to notWrapped). There is no
+     * background refresh: the key never changes, so there is nothing to refresh.
+     *
+     * @param keyWrapper Held only for symmetry - never called.
+     * @param notWrapped The plaintext DEK this provider's session encrypts/decrypts with.
+     */
+    AesGcmCryptoProviderImpl(KeyWrapper keyWrapper, byte[] notWrapped) {
+        this.keyWrapper = keyWrapper;
+        this.wrapped = notWrapped;
+        this.current = new AesGcmCryptoSession(notWrapped);
+        this.refreshExecutor = null;
+    }
+
     @Override
     public int encrypt(byte[] plaintext, byte[] result) {
         AesGcmCryptoSession session = current;
@@ -99,6 +117,16 @@ public final class AesGcmCryptoProviderImpl implements CryptoProvider {
         return session.decrypt(ciphertext, aad, result);
     }
 
+    @Override
+    public int getEncryptedAllocationLength(int length) {
+        return length + EXTRA_ALLOCATION_LENGTH;
+    }
+
+    @Override
+    public int getDecryptedAllocationLength(int length) {
+        return length - EXTRA_ALLOCATION_LENGTH;
+    }
+
     // A ScheduledExecutorService's scheduleAtFixedRate silently suppresses every future tick the
     // moment one execution throws - worse than a crash, since nothing ever refreshes again and
     // nothing reports it. Swallow (after recording) instead, and leave `current` as-is: the next
@@ -132,7 +160,11 @@ public final class AesGcmCryptoProviderImpl implements CryptoProvider {
 
     @Override
     public void close() {
-        refreshExecutor.shutdownNow();
+        if (refreshExecutor != null) {
+            refreshExecutor.shutdownNow();
+        }
+
+        ArrayUtility.zeroMemory(wrapped);
 
         synchronized (gate) {
             if (current != null) {

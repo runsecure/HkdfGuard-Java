@@ -14,7 +14,7 @@
   <packaging>jar</packaging>
 
   <name>HkdfGuard Cache</name>
-  <description>Default ProtectedCache (a single, already-built DataProtectionKey backing a highly concurrent encrypted-value cache) and ProtectedCacheCollectionImpl, an ordered aggregate of read-only cache sources.</description>
+  <description>Default ProtectedCache (a single, already-built DataEncryptionKey backing a highly concurrent encrypted-value cache) and ProtectedCacheCollectionImpl, an ordered aggregate of read-only cache sources.</description>
 
   <dependencies>
     <dependency>
@@ -30,7 +30,7 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <!-- Test-only: real DataProtectionKey plumbing to exercise the cache against a real cipher,
+    <!-- Test-only: real DataEncryptionKey plumbing to exercise the cache against a real cipher,
          matching the C# test project's own dependencies. -->
     <dependency>
       <groupId>com.runsecure.hkdfguard</groupId>

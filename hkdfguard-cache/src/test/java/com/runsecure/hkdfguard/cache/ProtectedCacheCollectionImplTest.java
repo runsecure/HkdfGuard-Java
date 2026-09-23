@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.cache.testhelpers.FakeKeyWrapper;
 import com.runsecure.hkdfguard.cache.testhelpers.ThrowingReadOnlyCache;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
@@ -26,9 +26,9 @@ class ProtectedCacheCollectionImplTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        return new ProtectedCacheImpl(dataProtectionKey);
+        return new ProtectedCacheImpl(dataEncryptionKey);
     }
 
     @Test

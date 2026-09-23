@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Shared ProtectedReadOnlyCache plumbing for every cache in this library: a single
- * DataProtectionKey, a case-insensitively-keyed concurrent map of encrypted bytes, and the
+ * DataEncryptionKey, a case-insensitively-keyed concurrent map of encrypted bytes, and the
  * encrypt/decrypt/telemetry logic every concrete cache needs. decrypt/tryGetMaxDecryptedLength
  * fall back to tryPopulate on a miss before giving up - the default implementation here just
  * returns false (nothing to pull from), but a subclass backed by an external source (e.g. a
@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
 
-    private final DataProtectionKey dataProtectionKey;
+    private final DataEncryptionKey dataEncryptionKey;
 
     /**
      * The encrypted values this cache holds, keyed case-insensitively. Protected so concrete
@@ -37,8 +37,8 @@ public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
      */
     protected final Map<String, byte[]> cache = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    protected ProtectedCacheBase(DataProtectionKey dataProtectionKey) {
-        this.dataProtectionKey = dataProtectionKey;
+    protected ProtectedCacheBase(DataEncryptionKey dataEncryptionKey) {
+        this.dataEncryptionKey = dataEncryptionKey;
     }
 
     /**
@@ -69,7 +69,7 @@ public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
                 return 0;
             }
 
-            return dataProtectionKey.decrypt(encrypted, result);
+            return dataEncryptionKey.decrypt(encrypted, result);
         } catch (RuntimeException ex) {
             telemetry.recordException(span, ex);
             throw ex;
@@ -97,7 +97,7 @@ public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
             // encrypted.length is a safe upper bound for the decrypted UTF-8 byte count.
             byte[] plaintextBytes = new byte[encrypted.length];
             try {
-                int decryptedLength = dataProtectionKey.decrypt(encrypted, plaintextBytes);
+                int decryptedLength = dataEncryptionKey.decrypt(encrypted, plaintextBytes);
                 return utf8Decode(plaintextBytes, decryptedLength, result);
             } finally {
                 ArrayUtility.zeroMemory(plaintextBytes);
@@ -130,21 +130,21 @@ public abstract class ProtectedCacheBase implements ProtectedReadOnlyCache {
     }
 
     /**
-     * Encrypts plaintext through this cache's DataProtectionKey.
+     * Encrypts plaintext through this cache's DataEncryptionKey.
      */
     protected byte[] encrypt(byte[] plaintext) {
-        return dataProtectionKey.encrypt(plaintext);
+        return dataEncryptionKey.encrypt(plaintext);
     }
 
     /**
-     * Encrypts plaintext (as UTF-8 bytes) through this cache's DataProtectionKey. plaintext is
+     * Encrypts plaintext (as UTF-8 bytes) through this cache's DataEncryptionKey. plaintext is
      * zeroed as a side effect - callers that only hold a String must copy it into a caller-owned
      * char[] first, since a String's own backing storage can't be safely cleared.
      */
     protected byte[] encryptChars(char[] plaintext) {
         try {
             byte[] plaintextBytes = utf8Encode(plaintext);
-            return dataProtectionKey.encrypt(plaintextBytes);
+            return dataEncryptionKey.encrypt(plaintextBytes);
         } finally {
             ArrayUtility.zeroMemory(plaintext);
         }

@@ -34,8 +34,8 @@ import java.util.Arrays;
  */
 final class AesGcmCryptoSession implements AutoCloseable {
 
-    private static final int TAG_SIZE = 16;
-    private static final int NONCE_SIZE = 12;
+    static final int TAG_SIZE = 16;
+    static final int NONCE_SIZE = 12;
     private static final int KEY_LENGTH = 32;
 
     private static final byte[] EMPTY_AAD = new byte[0];

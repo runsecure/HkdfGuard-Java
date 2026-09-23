@@ -66,4 +66,22 @@ class AesGcmCryptoProviderImplTest {
         // Only the constructor's eager build - the background task must not have fired after close.
         assertEquals(1, wrapper.getDecryptCallCount());
     }
+
+    @Test
+    void getEncryptedAllocationLength_addsNonceAndTagOverhead() {
+        FakeKeyWrapper wrapper = new FakeKeyWrapper();
+        try (AesGcmCryptoProviderImpl provider =
+                     new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60)) {
+            assertEquals(10 + 12 + 16, provider.getEncryptedAllocationLength(10));
+        }
+    }
+
+    @Test
+    void getDecryptedAllocationLength_removesNonceAndTagOverhead() {
+        FakeKeyWrapper wrapper = new FakeKeyWrapper();
+        try (AesGcmCryptoProviderImpl provider =
+                     new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60)) {
+            assertEquals(10, provider.getDecryptedAllocationLength(10 + 12 + 16));
+        }
+    }
 }

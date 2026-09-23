@@ -19,15 +19,15 @@ import static org.mockito.Mockito.when;
 class ProtectedCacheBaseTest {
 
     @Mock
-    private DataProtectionKey dataProtectionKey;
+    private DataEncryptionKey dataEncryptionKey;
 
     /**
      * A no-op "encryption" stand-in: encrypt/decrypt just copy bytes through unchanged, so the
      * test can assert on plaintext round-tripping without a real cipher.
      */
     private static final class TestCache extends ProtectedCacheBase {
-        TestCache(DataProtectionKey dataProtectionKey) {
-            super(dataProtectionKey);
+        TestCache(DataEncryptionKey dataEncryptionKey) {
+            super(dataEncryptionKey);
         }
 
         void put(String name, byte[] encrypted) {
@@ -41,7 +41,7 @@ class ProtectedCacheBaseTest {
 
     @Test
     void decryptBytes_missingName_returnsZero() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
 
         int written = sut.decrypt("missing", new byte[16]);
 
@@ -50,10 +50,10 @@ class ProtectedCacheBaseTest {
 
     @Test
     void decryptBytes_presentName_isCaseInsensitive() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
         byte[] encrypted = {1, 2, 3};
         sut.put("MyName", encrypted);
-        when(dataProtectionKey.decrypt(any(byte[].class), any(byte[].class)))
+        when(dataEncryptionKey.decrypt(any(byte[].class), any(byte[].class)))
                 .thenAnswer(invocation -> {
                     byte[] src = invocation.getArgument(0);
                     byte[] dest = invocation.getArgument(1);
@@ -70,11 +70,11 @@ class ProtectedCacheBaseTest {
 
     @Test
     void decryptChars_decodesUtf8DirectlyIncludingMultiByteChars() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
         String plaintext = "héllo wörld éèê";
         byte[] utf8Bytes = plaintext.getBytes(StandardCharsets.UTF_8);
         sut.put("greeting", utf8Bytes);
-        when(dataProtectionKey.decrypt(any(byte[].class), any(byte[].class)))
+        when(dataEncryptionKey.decrypt(any(byte[].class), any(byte[].class)))
                 .thenAnswer(invocation -> {
                     byte[] src = invocation.getArgument(0);
                     byte[] dest = invocation.getArgument(1);
@@ -91,7 +91,7 @@ class ProtectedCacheBaseTest {
 
     @Test
     void tryGetMaxDecryptedLength_missingName_returnsEmpty() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
 
         OptionalInt result = sut.tryGetMaxDecryptedLength("missing");
 
@@ -100,7 +100,7 @@ class ProtectedCacheBaseTest {
 
     @Test
     void tryGetMaxDecryptedLength_presentName_returnsEncryptedLength() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
         sut.put("name", new byte[]{1, 2, 3, 4, 5});
 
         OptionalInt result = sut.tryGetMaxDecryptedLength("name");
@@ -111,15 +111,15 @@ class ProtectedCacheBaseTest {
 
     @Test
     void tryPopulate_defaultImplementation_returnsFalse() {
-        TestCache sut = new TestCache(dataProtectionKey);
+        TestCache sut = new TestCache(dataEncryptionKey);
 
         assertEquals(0, sut.decrypt("anything", new byte[16]));
     }
 
     @Test
     void encryptChars_zeroesSourcePlaintextAfterEncrypting() {
-        TestCache sut = new TestCache(dataProtectionKey);
-        when(dataProtectionKey.encrypt(any(byte[].class))).thenAnswer(invocation -> {
+        TestCache sut = new TestCache(dataEncryptionKey);
+        when(dataEncryptionKey.encrypt(any(byte[].class))).thenAnswer(invocation -> {
             byte[] plaintextBytes = invocation.getArgument(0);
             assertArrayEquals("secret".getBytes(StandardCharsets.UTF_8), plaintextBytes);
             return new byte[]{9, 9, 9};

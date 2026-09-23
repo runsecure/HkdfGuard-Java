@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.cache.testhelpers.FakeKeyWrapper;
 import com.runsecure.hkdfguard.cache.testhelpers.PopulatingCache;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
@@ -22,9 +22,9 @@ class ProtectedCacheBaseTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        return new PopulatingCache(dataProtectionKey);
+        return new PopulatingCache(dataEncryptionKey);
     }
 
     @Test
@@ -100,9 +100,9 @@ class ProtectedCacheBaseTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        PopulatingCache cache = new PopulatingCache(dataProtectionKey);
+        PopulatingCache cache = new PopulatingCache(dataEncryptionKey);
         cache.setOnTryPopulate(null);
 
         int written = cache.decrypt("item", new byte[16]);

@@ -1,10 +1,10 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.CryptoProvider;
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
-import com.runsecure.hkdfguard.abstractions.KeyWrapper;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
+import com.runsecure.hkdfguard.abstractions.CryptoProviderFactory;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderFactoryImpl;
 import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.FakeKeyWrapper;
+import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.RecordingCryptoProviderFactory;
 import com.runsecure.hkdfguard.dataencryptionkey.testhelpers.RecordingFormatProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-import java.util.function.BiFunction;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,8 +27,7 @@ class KeyRingBuilderTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final BiFunction<KeyWrapper, byte[], CryptoProvider> SESSION_PROVIDER_FACTORY =
-            (keyWrapper, wrapped) -> new AesGcmCryptoProviderImpl(keyWrapper, wrapped, 60);
+    private static final CryptoProviderFactory CRYPTO_PROVIDER_FACTORY = new AesGcmCryptoProviderFactoryImpl();
 
     private static FakeKeyWrapper randomWrapper() {
         byte[] key = new byte[32];
@@ -74,16 +73,18 @@ class KeyRingBuilderTest {
     @Test
     void build_withoutKeyWrapper_throws() {
         KeyRingBuilder builder = new KeyRingBuilder()
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withEphemeralKey(1);
 
         assertThrows(IllegalStateException.class, builder::build);
     }
 
     @Test
-    void build_withoutSessionProviderFactory_throws() {
+    void build_withoutCryptoProviderFactory_throws() {
         KeyRingBuilder builder = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
+                .withCachedKeyExpiry(60)
                 .withEphemeralKey(1);
 
         assertThrows(IllegalStateException.class, builder::build);
@@ -93,7 +94,18 @@ class KeyRingBuilderTest {
     void build_withoutKeyFilesOrEphemeralKeys_throws() {
         KeyRingBuilder builder = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY);
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60);
+
+        assertThrows(IllegalStateException.class, builder::build);
+    }
+
+    @Test
+    void build_withoutCachedKeyExpiry_throws() {
+        KeyRingBuilder builder = new KeyRingBuilder()
+                .withKeyWrapper(randomWrapper())
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withEphemeralKey(1);
 
         assertThrows(IllegalStateException.class, builder::build);
     }
@@ -105,7 +117,8 @@ class KeyRingBuilderTest {
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withKeyFile(1, path)
                 .build();
 
@@ -121,7 +134,8 @@ class KeyRingBuilderTest {
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withKeyFile(1, path1)
                 .withKeyFile(2, path2)
                 .build();
@@ -133,7 +147,8 @@ class KeyRingBuilderTest {
     void build_withEphemeralKey_registersVersion() {
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withEphemeralKey(1)
                 .build();
 
@@ -144,11 +159,12 @@ class KeyRingBuilderTest {
     void build_withEphemeralKey_producesAWorkingKey() {
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withEphemeralKey(1)
                 .build();
 
-        DataProtectionKey key = ring.get(1);
+        DataEncryptionKey key = ring.get(1);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
 
@@ -167,7 +183,8 @@ class KeyRingBuilderTest {
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withKeyFile(1, path)
                 .withEphemeralKey(2)
                 .build();
@@ -181,7 +198,8 @@ class KeyRingBuilderTest {
 
         KeyRing ring = new KeyRingBuilder()
                 .withKeyWrapper(randomWrapper())
-                .withSessionProviderFactory(SESSION_PROVIDER_FACTORY)
+                .withCryptoProviderFactory(CRYPTO_PROVIDER_FACTORY)
+                .withCachedKeyExpiry(60)
                 .withEphemeralKey(1)
                 .withFormatProvider(recordingFormatProvider)
                 .build();
@@ -189,5 +207,37 @@ class KeyRingBuilderTest {
         ring.createProtector("purpose").encrypt("hello".toCharArray());
 
         assertTrue(recordingFormatProvider.isFormatCalled());
+    }
+
+    @Test
+    void build_withKeyFile_passesCachedKeyExpiryToTheCryptoProviderFactory(@TempDir Path tempDir) throws IOException {
+        Path path = tempDir.resolve("key1");
+        Files.writeString(path, "wrapped");
+        RecordingCryptoProviderFactory recordingFactory = new RecordingCryptoProviderFactory();
+
+        new KeyRingBuilder()
+                .withKeyWrapper(randomWrapper())
+                .withCryptoProviderFactory(recordingFactory)
+                .withCachedKeyExpiry(123)
+                .withKeyFile(1, path)
+                .build();
+
+        assertEquals(List.of(123), recordingFactory.getCreateExpirySecondsCalls());
+    }
+
+    @Test
+    void build_withEphemeralKey_passesCachedKeyExpiryRatherThanVersionToTheCryptoProviderFactory() {
+        // Regression test: createEphemeral used to be called with the KeyRing version instead of
+        // cachedKeyExpiry - a version of 1 would silently become a 1-second session lifetime.
+        RecordingCryptoProviderFactory recordingFactory = new RecordingCryptoProviderFactory();
+
+        new KeyRingBuilder()
+                .withKeyWrapper(randomWrapper())
+                .withCryptoProviderFactory(recordingFactory)
+                .withCachedKeyExpiry(123)
+                .withEphemeralKey(42)
+                .build();
+
+        assertEquals(List.of(123), recordingFactory.getCreateEphemeralExpirySecondsCalls());
     }
 }

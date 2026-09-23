@@ -4,7 +4,7 @@ package com.runsecure.hkdfguard.abstractions;
  * A named, string-level data protector: the name given at construction is used as the Additional
  * Auth Data for every encrypt/decrypt, binding a protected value to the purpose it was protected
  * for so it can't be reused under a different one. encrypt/decrypt resolve the actual
- * DataProtectionKey to use from a KeyRing, rather than holding one key permanently.
+ * DataEncryptionKey to use from a KeyRing, rather than holding one key permanently.
  */
 public interface DataProtector {
 

@@ -46,6 +46,22 @@ public interface CryptoProvider extends AutoCloseable {
      */
     int decrypt(byte[] ciphertext, byte[] aad, byte[] result);
 
+    /**
+     * Gets the required length for allocation from this provider for encrypted data
+     *
+     * @param length The required length for an encrypted value
+     * @return Number of bytes required in the encrypted array
+     */
+    int getEncryptedAllocationLength(int length);
+
+    /**
+     * Gets the required length for allocation from this provider for decrypted data
+     *
+     * @param length The required length for a decrypted value
+     * @return Number of bytes required in the decrypted array
+     */
+    int getDecryptedAllocationLength(int length);
+
     @Override
     void close();
 }

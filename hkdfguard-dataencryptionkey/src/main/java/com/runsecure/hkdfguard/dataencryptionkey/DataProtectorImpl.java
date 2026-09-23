@@ -1,7 +1,7 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.abstractions.DataProtector;
 import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.abstractions.KeyTrackingValue;
@@ -81,7 +81,7 @@ final class DataProtectorImpl implements DataProtector {
             }
 
             KeyTrackingValue value = formatProvider.parse(encrypted);
-            DataProtectionKey key = keyRing.get(value.keyVersion());
+            DataEncryptionKey key = keyRing.get(value.keyVersion());
 
             // AEAD ciphertext is always at least as long as the plaintext it encloses, so
             // value.value().length is a safe upper bound for the decrypted UTF-8 byte count.

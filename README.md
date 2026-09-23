@@ -42,8 +42,8 @@ HkdfGuard provides defense-in-depth protection for application secrets in memory
                                    (AEAD Encrypt/Decrypt)
                                            v
                               +---------------------------+
-                              |     DataProtectionKey     |
-                              | (KeyWrapped / Ephemeral)  |
+                              |      DataEncryptionKey    |
+                              |   (KeyWrapped / Pipeline) |
                               +---------------------------+
                                            |
                                (Version Management / AAD)
@@ -75,11 +75,11 @@ The project is structured as a Maven multi-module repository:
 
 | Module                                  | Description                                                                                                                                                                                            |
 |:----------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`hkdfguard-abstractions`**            | Core interfaces (`DataProtector`, `DataProtectionKey`, `CryptoProvider`, `KeyWrapper`, `ProtectedCache`, `EncryptedFormatProvider`) and utilities (`ArrayUtility`).                                 |
+| **`hkdfguard-abstractions`**            | Core interfaces (`DataProtector`, `DataEncryptionKey`, `CryptoProvider`, `CryptoProviderFactory`, `KeyWrapper`, `ProtectedCache`, `EncryptedFormatProvider`) and utilities (`ArrayUtility`).                                 |
 | **`hkdfguard-diagnostics`**             | OpenTelemetry tracing and metrics instrumentation, event constants, and SLF4J logging extensions.                                                                                                    |
 | **`hkdfguard-keywrapping-v1`**          | JNA native bindings to platform KMS libraries (`WindowsHkdfGuardKmsLibrary`, `LinuxHkdfGuardKmsLibrary`, `MacOsHkdfGuardKmsLibrary`) through `NativeHost` and `NativeHkdfKeyWrapperV1Impl`.          |
-| **`hkdfguard-cryptosession-aesgcm256`** | AES-256-GCM authenticated cipher session (`AesGcmCryptoSession`) and cached background-refresh provider (`AesGcmCryptoProviderImpl`).                                                                |
-| **`hkdfguard-dataencryptionkey`**       | High-level data protection implementations: `KeyRing`, `KeyRingBuilder`, `DataProtectorImpl`, `EphemeralDataEncryptionKeyImpl`, `KeyWrappedDataEncryptionKeyImpl`, `PipelineDataEncryptionKeyImpl`, and default format providers. |
+| **`hkdfguard-cryptosession-aesgcm256`** | AES-256-GCM authenticated cipher session (`AesGcmCryptoSession`) and cached background-refresh provider (`AesGcmCryptoProviderImpl`), minted via `AesGcmCryptoProviderFactoryImpl`.                  |
+| **`hkdfguard-dataencryptionkey`**       | High-level data protection implementations: `KeyRing`, `KeyRingBuilder`, `DataProtectorImpl`, `EncryptionKeyBase`, `KeyWrappedDataEncryptionKeyImpl`, `PipelineDataEncryptionKeyImpl`, `PipelineKeyFactory`, and default format providers. |
 | **`hkdfguard-cache`**                   | Thread-safe, encrypted in-memory caches (`ProtectedCacheImpl`, `ProtectedCacheCollectionImpl`).                                                                                                      |
 
 ---
@@ -100,7 +100,7 @@ The project is structured as a Maven multi-module repository:
 import com.runsecure.hkdfguard.abstractions.DataProtector;
 import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
-import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
+import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderFactoryImpl;
 import com.runsecure.hkdfguard.dataencryptionkey.KeyRing;
 import com.runsecure.hkdfguard.dataencryptionkey.KeyRingBuilder;
 import com.runsecure.hkdfguard.keywrapping.v1.NativeHkdfKeyWrapperV1Impl;
@@ -117,7 +117,8 @@ public class Example {
         KeyRing keyRing = new KeyRingBuilder()
                 .withServiceName("MyApplicationService")
                 .withKeyWrapper(keyWrapper)
-                .withSessionProviderFactory((kw, wrapped) -> new AesGcmCryptoProviderImpl(kw, wrapped, 60))
+                .withCryptoProviderFactory(new AesGcmCryptoProviderFactoryImpl())
+                .withCachedKeyExpiry(60)
                 .withKeyFile(1, Path.of("/etc/keys/app_v1.dek"))
                 .withKeyFile(2, Path.of("/etc/keys/app_v2.dek"))
                 .build();
@@ -156,14 +157,14 @@ public class Example {
 ### 2. Using In-Memory `ProtectedCache`
 
 ```
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.abstractions.ProtectedCache;
 import com.runsecure.hkdfguard.abstractions.ArrayUtility;
 import com.runsecure.hkdfguard.cache.ProtectedCacheImpl;
 
 public class CacheExample {
-    public void run(DataProtectionKey protectionKey) {
-        ProtectedCache cache = new ProtectedCacheImpl(protectionKey);
+    public void run(DataEncryptionKey dataEncryptionKey) {
+        ProtectedCache cache = new ProtectedCacheImpl(dataEncryptionKey);
 
         // Secrets are encrypted immediately upon storage; plaintext is zeroed
         char[] token = "api-token-xyz-987".toCharArray();

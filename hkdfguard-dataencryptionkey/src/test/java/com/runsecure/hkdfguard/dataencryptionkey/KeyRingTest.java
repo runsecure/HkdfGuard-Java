@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.abstractions.DataProtector;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
 import com.runsecure.hkdfguard.dataencryptionkey.formatprovider.DefaultFormatProviderImpl;
@@ -24,7 +24,7 @@ class KeyRingTest {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static DataProtectionKey createFakeKey() {
+    private static DataEncryptionKey createFakeKey() {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         return new KeyWrappedDataEncryptionKeyImpl(
@@ -84,7 +84,7 @@ class KeyRingTest {
     @Test
     void get_registeredVersion_returnsSameInstance() {
         KeyRing ring = new KeyRing(new DefaultFormatProviderImpl());
-        DataProtectionKey key = createFakeKey();
+        DataEncryptionKey key = createFakeKey();
         ring.add(1, key);
 
         assertSame(key, ring.get(1));
@@ -99,10 +99,10 @@ class KeyRingTest {
     @Test
     void tryGet_registeredVersion_returnsKey() {
         KeyRing ring = new KeyRing(new DefaultFormatProviderImpl());
-        DataProtectionKey key = createFakeKey();
+        DataEncryptionKey key = createFakeKey();
         ring.add(1, key);
 
-        Optional<DataProtectionKey> found = ring.tryGet(1);
+        Optional<DataEncryptionKey> found = ring.tryGet(1);
         assertTrue(found.isPresent());
         assertSame(key, found.get());
     }
@@ -116,7 +116,7 @@ class KeyRingTest {
     @Test
     void getCurrent_returnsCurrentVersionAndKey() {
         KeyRing ring = new KeyRing(new DefaultFormatProviderImpl());
-        DataProtectionKey key = createFakeKey();
+        DataEncryptionKey key = createFakeKey();
         ring.add(3, key);
 
         KeyRing.CurrentKey current = ring.getCurrent();

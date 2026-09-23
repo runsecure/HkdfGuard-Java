@@ -13,12 +13,17 @@ final class FakeKeyWrapper implements KeyWrapper {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private int decryptCallCount;
+    private int generateAndWrapCallCount;
 
     /** When set, decrypt throws this instead of revealing a key. */
     private RuntimeException throwOnDecrypt;
 
     int getDecryptCallCount() {
         return decryptCallCount;
+    }
+
+    int getGenerateAndWrapCallCount() {
+        return generateAndWrapCallCount;
     }
 
     void setThrowOnDecrypt(RuntimeException exception) {
@@ -43,6 +48,10 @@ final class FakeKeyWrapper implements KeyWrapper {
 
     @Override
     public int generateAndWrap(byte[] result) {
-        throw new UnsupportedOperationException();
+        generateAndWrapCallCount++;
+        byte[] key = new byte[32];
+        RANDOM.nextBytes(key);
+        System.arraycopy(key, 0, result, 0, key.length);
+        return key.length;
     }
 }

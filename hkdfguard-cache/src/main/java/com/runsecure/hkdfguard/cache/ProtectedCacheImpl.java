@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.abstractions.ProtectedCache;
 import com.runsecure.hkdfguard.abstractions.ProtectedCacheBase;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
@@ -13,7 +13,7 @@ import io.opentelemetry.api.trace.Span;
 import org.slf4j.Logger;
 
 /**
- * Default ProtectedCache. Backed by a single, already-built DataProtectionKey - every
+ * Default ProtectedCache. Backed by a single, already-built DataEncryptionKey - every
  * add/addOrUpdate encrypts through it (see ProtectedCacheBase), every decrypt reveals through it.
  * add uses putIfAbsent as its atomicity gate so a duplicate name is rejected even under
  * concurrent callers; addOrUpdate's upsert and decrypt's reads are otherwise lock-free, so this
@@ -29,12 +29,12 @@ public final class ProtectedCacheImpl extends ProtectedCacheBase implements Prot
 
     private final Logger logger;
 
-    public ProtectedCacheImpl(DataProtectionKey dataProtectionKey) {
-        this(dataProtectionKey, null);
+    public ProtectedCacheImpl(DataEncryptionKey dataEncryptionKey) {
+        this(dataEncryptionKey, null);
     }
 
-    public ProtectedCacheImpl(DataProtectionKey dataProtectionKey, Logger logger) {
-        super(dataProtectionKey);
+    public ProtectedCacheImpl(DataEncryptionKey dataEncryptionKey, Logger logger) {
+        super(dataEncryptionKey);
         this.logger = logger;
     }
 

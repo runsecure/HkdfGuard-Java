@@ -1,6 +1,7 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
 import com.runsecure.hkdfguard.abstractions.CryptoProvider;
+import com.runsecure.hkdfguard.abstractions.CryptoProviderFactory;
 import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 import com.runsecure.hkdfguard.dataencryptionkey.formatprovider.DefaultFormatProviderImpl;
@@ -11,22 +12,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 
 /**
  * Builds a KeyRing from wrapped-DEK files on disk, suitable for registering as a singleton in a
  * DI container at startup. There is one KeyWrapper shared by every registered file - it's bound
  * only to a KEK (e.g. NativeHkdfKeyWrapperV1Impl's service name), not to any one wrapped payload, so
  * it can reveal any number of different files' DEKs (see KeyWrapper). Each registered file gets
- * its own CryptoProvider (minted by sessionProviderFactory, bound to that file's own
- * wrapped bytes) and becomes its own KeyWrappedDataEncryptionKeyImpl. withEphemeralKey registers a
- * version whose own key material is instead generated fresh in memory on first use (see
- * EphemeralDataEncryptionKeyImpl) - it shares the same KeyWrapper/sessionProviderFactory, so no
- * extra configuration is needed for it.
+ * its own CryptoProvider (minted by the configured CryptoProviderFactory, bound to that file's
+ * own wrapped bytes) and becomes its own KeyWrappedDataEncryptionKeyImpl. withEphemeralKey
+ * registers a version whose own key material is instead generated fresh in memory on first use
+ * (via CryptoProviderFactory.createEphemeral) - it shares the same
+ * KeyWrapper/CryptoProviderFactory, so no extra configuration is needed for it.
  *
  * <p>getServiceName/getCachedKeyExpiry/getKeyRotationDays describe this ring's key
- * identity/policy - they're carried on the builder for callers to read back, but are not
- * consumed by build itself, since KeyWrapper already knows what KEK it's bound to.
+ * identity/policy - they're carried on the builder for callers to read back, but only
+ * cachedKeyExpiry is consumed by build itself (as every provider's refresh interval), since
+ * KeyWrapper already knows what KEK it's bound to.
  */
 public final class KeyRingBuilder {
 
@@ -34,7 +35,7 @@ public final class KeyRingBuilder {
     private final List<Integer> ephemeralVersions = new ArrayList<>();
 
     private KeyWrapper keyWrapper;
-    private BiFunction<KeyWrapper, byte[], CryptoProvider> sessionProviderFactory;
+    private CryptoProviderFactory cryptoProviderFactory;
     private EncryptedFormatProvider formatProvider = new DefaultFormatProviderImpl();
 
     private String serviceName;
@@ -100,12 +101,11 @@ public final class KeyRingBuilder {
     }
 
     /**
-     * Supplies the factory used to build each key file's own CryptoProvider, called once
-     * per registered file with the shared KeyWrapper and that file's own wrapped bytes - e.g.
-     * {@code (kw, wrapped) -> new AesGcmCryptoProviderImpl(kw, wrapped, 60)}.
+     * Supplies the factory used to build each key file's own CryptoProvider, called once per
+     * registered file with the shared KeyWrapper and that file's own wrapped bytes.
      */
-    public KeyRingBuilder withSessionProviderFactory(BiFunction<KeyWrapper, byte[], CryptoProvider> sessionProviderFactory) {
-        this.sessionProviderFactory = sessionProviderFactory;
+    public KeyRingBuilder withCryptoProviderFactory(CryptoProviderFactory cryptoProviderFactory) {
+        this.cryptoProviderFactory = cryptoProviderFactory;
         return this;
     }
 
@@ -133,9 +133,9 @@ public final class KeyRingBuilder {
 
     /**
      * Registers a version whose own key material is generated fresh in memory the first time
-     * it's used, and never written to or read from disk (see EphemeralDataEncryptionKeyImpl). The
-     * highest version registered across every withKeyFile/withEphemeralKey call intrinsically
-     * becomes the built KeyRing's current version.
+     * it's used, and never written to or read from disk. The highest version registered across
+     * every withKeyFile/withEphemeralKey call intrinsically becomes the built KeyRing's current
+     * version.
      *
      * @param version The KeyRing version to register this key under
      */
@@ -148,31 +148,35 @@ public final class KeyRingBuilder {
      * Reads each registered key file's wrapped bytes, mints each registered ephemeral key, and
      * returns a populated KeyRing.
      *
-     * @throws IllegalStateException No key wrapper, no session provider factory, or no key
-     *     files/ephemeral keys were configured
+     * @throws IllegalStateException No key wrapper, no crypto provider factory, no key
+     *     files/ephemeral keys, or no cached key expiry were configured
      */
     public KeyRing build() {
         if (keyWrapper == null) {
             throw new IllegalStateException("A key wrapper is required - call withKeyWrapper first.");
         }
-        if (sessionProviderFactory == null) {
-            throw new IllegalStateException("A session provider factory is required - call withSessionProviderFactory first.");
+        if (cryptoProviderFactory == null) {
+            throw new IllegalStateException("A crypto provider factory is required - call withCryptoProviderFactory first.");
         }
         if (keyFiles.isEmpty() && ephemeralVersions.isEmpty()) {
             throw new IllegalStateException(
                     "At least one key file or ephemeral key is required - call withKeyFile or withEphemeralKey first.");
+        }
+        if (cachedKeyExpiry == null) {
+            throw new IllegalStateException("A cached key expiry is required - call withCachedKeyExpiry first.");
         }
 
         KeyRing ring = new KeyRing(formatProvider);
 
         for (KeyFile keyFile : keyFiles) {
             byte[] wrapped = readAllBytes(keyFile.path());
-            CryptoProvider provider = sessionProviderFactory.apply(keyWrapper, wrapped);
+            CryptoProvider provider = cryptoProviderFactory.create(keyWrapper, wrapped, cachedKeyExpiry);
             ring.add(keyFile.version(), new KeyWrappedDataEncryptionKeyImpl(provider));
         }
 
         for (int version : ephemeralVersions) {
-            ring.add(version, new EphemeralDataEncryptionKeyImpl(keyWrapper, sessionProviderFactory));
+            CryptoProvider provider = cryptoProviderFactory.createEphemeral(keyWrapper, cachedKeyExpiry);
+            ring.add(version, new KeyWrappedDataEncryptionKeyImpl(provider));
         }
 
         return ring;

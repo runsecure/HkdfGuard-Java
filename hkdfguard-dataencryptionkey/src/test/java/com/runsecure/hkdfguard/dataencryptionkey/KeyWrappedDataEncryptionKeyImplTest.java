@@ -31,16 +31,16 @@ class KeyWrappedDataEncryptionKeyImplTest {
 
     @Test
     void encryptDecrypt_roundTrips() {
-        KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(null);
+        KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(null);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         // AesGcmCryptoSession.encrypt zeroes the plaintext array it's given as a side effect.
         byte[] expected = plaintext.clone();
 
-        byte[] encrypted = dataProtectionKey.encrypt(plaintext);
+        byte[] encrypted = dataEncryptionKey.encrypt(plaintext);
         assertEquals(expected.length + 12 + 16, encrypted.length);
 
         byte[] decrypted = new byte[expected.length];
-        int decryptedLength = dataProtectionKey.decrypt(encrypted, decrypted);
+        int decryptedLength = dataEncryptionKey.decrypt(encrypted, decrypted);
 
         assertEquals(expected.length, decryptedLength);
         assertArrayEquals(expected, decrypted);
@@ -48,40 +48,40 @@ class KeyWrappedDataEncryptionKeyImplTest {
 
     @Test
     void encryptDecrypt_withAad_roundTrips() {
-        KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(null);
+        KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(null);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
         byte[] expected = plaintext.clone();
         byte[] aad = "context".getBytes(StandardCharsets.UTF_8);
 
-        byte[] encrypted = dataProtectionKey.encrypt(plaintext, aad);
+        byte[] encrypted = dataEncryptionKey.encrypt(plaintext, aad);
 
         byte[] decrypted = new byte[expected.length];
-        int decryptedLength = dataProtectionKey.decrypt(encrypted, aad, decrypted);
+        int decryptedLength = dataEncryptionKey.decrypt(encrypted, aad, decrypted);
 
         assertArrayEquals(expected, Arrays.copyOf(decrypted, decryptedLength));
     }
 
     @Test
     void decrypt_withMismatchedAad_throws() {
-        KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(null);
+        KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(null);
         byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
-        byte[] encrypted = dataProtectionKey.encrypt(plaintext, "context-a".getBytes(StandardCharsets.UTF_8));
+        byte[] encrypted = dataEncryptionKey.encrypt(plaintext, "context-a".getBytes(StandardCharsets.UTF_8));
 
         byte[] result = new byte[plaintext.length];
         assertThrows(AuthenticationTagMismatchException.class,
-                () -> dataProtectionKey.decrypt(encrypted, "context-b".getBytes(StandardCharsets.UTF_8), result));
+                () -> dataEncryptionKey.decrypt(encrypted, "context-b".getBytes(StandardCharsets.UTF_8), result));
     }
 
     @Test
     void encryptDecrypt_withSensitiveLoggingEnabled_stillRoundTrips() {
         try (SensitiveLoggingScope ignored = new SensitiveLoggingScope(true)) {
-            KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(null);
+            KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(null);
             byte[] plaintext = "top secret".getBytes(StandardCharsets.UTF_8);
             byte[] expected = plaintext.clone();
 
-            byte[] encrypted = dataProtectionKey.encrypt(plaintext);
+            byte[] encrypted = dataEncryptionKey.encrypt(plaintext);
             byte[] decrypted = new byte[expected.length];
-            int decryptedLength = dataProtectionKey.decrypt(encrypted, decrypted);
+            int decryptedLength = dataEncryptionKey.decrypt(encrypted, decrypted);
 
             assertArrayEquals(expected, Arrays.copyOf(decrypted, decryptedLength));
         }
@@ -89,11 +89,11 @@ class KeyWrappedDataEncryptionKeyImplTest {
 
     @Test
     void encrypt_returnsExactlySizedArray() {
-        KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(null);
+        KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(null);
         byte[] plaintext = "a longer plaintext value to encrypt".getBytes(StandardCharsets.UTF_8);
         int expectedLength = plaintext.length + 12 + 16; // AES-GCM nonce + tag overhead
 
-        byte[] encrypted = dataProtectionKey.encrypt(plaintext);
+        byte[] encrypted = dataEncryptionKey.encrypt(plaintext);
 
         assertEquals(expectedLength, encrypted.length);
     }
@@ -104,12 +104,12 @@ class KeyWrappedDataEncryptionKeyImplTest {
         // session yet or the cached one has expired - not on every operation - so a wrapper's
         // key is revealed once here, then reused for every subsequent encrypt/decrypt.
         FakeKeyWrapper[] wrapperOut = new FakeKeyWrapper[1];
-        KeyWrappedDataEncryptionKeyImpl dataProtectionKey = createKey(wrapperOut);
-        byte[] encrypted1 = dataProtectionKey.encrypt("one".getBytes(StandardCharsets.UTF_8));
-        byte[] encrypted2 = dataProtectionKey.encrypt("two".getBytes(StandardCharsets.UTF_8));
+        KeyWrappedDataEncryptionKeyImpl dataEncryptionKey = createKey(wrapperOut);
+        byte[] encrypted1 = dataEncryptionKey.encrypt("one".getBytes(StandardCharsets.UTF_8));
+        byte[] encrypted2 = dataEncryptionKey.encrypt("two".getBytes(StandardCharsets.UTF_8));
 
-        dataProtectionKey.decrypt(encrypted1, new byte[3]);
-        dataProtectionKey.decrypt(encrypted2, new byte[3]);
+        dataEncryptionKey.decrypt(encrypted1, new byte[3]);
+        dataEncryptionKey.decrypt(encrypted2, new byte[3]);
 
         assertEquals(1, wrapperOut[0].getDecryptCallCount());
     }

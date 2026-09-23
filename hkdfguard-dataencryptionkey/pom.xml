@@ -14,7 +14,7 @@
   <packaging>jar</packaging>
 
   <name>HkdfGuard Data Encryption Key</name>
-  <description>DataProtectionKey implementations (key-wrapped, ephemeral, pipeline), a version-tracking KeyRing/DataProtector, and the default encrypted-value wire format.</description>
+  <description>DataEncryptionKey implementations (key-wrapped, pipeline), a version-tracking KeyRing/DataProtector, and the default encrypted-value wire format.</description>
 
   <dependencies>
     <dependency>

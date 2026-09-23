@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.cache;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.cache.testhelpers.FakeKeyWrapper;
 import com.runsecure.hkdfguard.cryptosession.aesgcm256.AesGcmCryptoProviderImpl;
 import com.runsecure.hkdfguard.dataencryptionkey.KeyWrappedDataEncryptionKeyImpl;
@@ -54,9 +54,9 @@ class ProtectedCacheImplTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        return new ProtectedCacheImpl(dataProtectionKey);
+        return new ProtectedCacheImpl(dataEncryptionKey);
     }
 
     @Test
@@ -441,9 +441,9 @@ class ProtectedCacheImplTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, null);
+        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataEncryptionKey, null);
 
         assertDoesNotThrow(() -> cache.add("item", "value".getBytes(StandardCharsets.UTF_8)));
     }
@@ -457,9 +457,9 @@ class ProtectedCacheImplTest {
             byte[] key = new byte[32];
             RANDOM.nextBytes(key);
             FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-            DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+            DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                     new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-            ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, logger);
+            ProtectedCacheImpl cache = new ProtectedCacheImpl(dataEncryptionKey, logger);
 
             cache.add("item", "value".getBytes(StandardCharsets.UTF_8));
 
@@ -477,9 +477,9 @@ class ProtectedCacheImplTest {
         byte[] key = new byte[32];
         RANDOM.nextBytes(key);
         FakeKeyWrapper wrapper = new FakeKeyWrapper(key);
-        DataProtectionKey dataProtectionKey = new KeyWrappedDataEncryptionKeyImpl(
+        DataEncryptionKey dataEncryptionKey = new KeyWrappedDataEncryptionKeyImpl(
                 new AesGcmCryptoProviderImpl(wrapper, "wrapped".getBytes(StandardCharsets.UTF_8), 60));
-        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataProtectionKey, logger);
+        ProtectedCacheImpl cache = new ProtectedCacheImpl(dataEncryptionKey, logger);
         cache.add("item", "first".getBytes(StandardCharsets.UTF_8));
 
         assertThrows(IllegalArgumentException.class, () -> cache.add("item", "second".getBytes(StandardCharsets.UTF_8)));

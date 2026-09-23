@@ -5,7 +5,7 @@ import com.runsecure.hkdfguard.abstractions.KeyWrapper;
 /**
  * A KeyWrapper that always reveals/generates the same fixed key, tracking how many times
  * decrypt/generateAndWrap were called - isolates
- * KeyWrappedDataEncryptionKeyImpl/EphemeralDataEncryptionKeyImpl/KeyRing tests from the real native KMS
+ * KeyWrappedDataEncryptionKeyImpl/PipelineDataEncryptionKeyImpl/KeyRing tests from the real native KMS
  * machinery while still exercising real AES-GCM via a real CryptoProvider.
  */
 public final class FakeKeyWrapper implements KeyWrapper {

@@ -1,6 +1,6 @@
 package com.runsecure.hkdfguard.dataencryptionkey;
 
-import com.runsecure.hkdfguard.abstractions.DataProtectionKey;
+import com.runsecure.hkdfguard.abstractions.DataEncryptionKey;
 import com.runsecure.hkdfguard.abstractions.DataProtector;
 import com.runsecure.hkdfguard.abstractions.EncryptedFormatProvider;
 import com.runsecure.hkdfguard.diagnostics.ActivityNames;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
 /**
- * Tracks DataProtectionKey instances by version for highly concurrent workloads (thousands of
+ * Tracks DataEncryptionKey instances by version for highly concurrent workloads (thousands of
  * operations per second). get is served straight off a ConcurrentHashMap, so the hot read path
  * never blocks - no telemetry on that path either, only on a get miss, since that's the
  * exceptional case and startup overhead there is irrelevant. add is serialized through a
@@ -33,7 +33,7 @@ public final class KeyRing {
     private static final int NO_CURRENT_VERSION = Integer.MIN_VALUE;
 
     private final EncryptedFormatProvider formatProvider;
-    private final ConcurrentMap<Integer, DataProtectionKey> keysByVersion = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, DataEncryptionKey> keysByVersion = new ConcurrentHashMap<>();
     private final Semaphore addGate = new Semaphore(1);
 
     private volatile int currentVersion = NO_CURRENT_VERSION;
@@ -61,10 +61,10 @@ public final class KeyRing {
      * so far, it intrinsically becomes the new current version.
      *
      * @param version The key version to register
-     * @param key The DataProtectionKey for this version
+     * @param key The DataEncryptionKey for this version
      * @throws IllegalArgumentException A key for this version is already registered
      */
-    public void add(int version, DataProtectionKey key) {
+    public void add(int version, DataEncryptionKey key) {
         ComponentTelemetry telemetry = HkdfGuardTelemetry.DATA_PROTECTION;
         Span span = telemetry.getTracer().spanBuilder(ActivityNames.DataProtection.KEY_RING_ADD).startSpan();
 
@@ -97,11 +97,11 @@ public final class KeyRing {
      * Retrieves the key registered for the given version.
      *
      * @param version The key version to retrieve
-     * @return The registered DataProtectionKey
+     * @return The registered DataEncryptionKey
      * @throws NoSuchElementException No key is registered for this version
      */
-    public DataProtectionKey get(int version) {
-        DataProtectionKey key = keysByVersion.get(version);
+    public DataEncryptionKey get(int version) {
+        DataEncryptionKey key = keysByVersion.get(version);
         if (key != null) {
             return key;
         }
@@ -120,14 +120,14 @@ public final class KeyRing {
      * unacceptable.
      *
      * @param version The key version to retrieve
-     * @return The registered DataProtectionKey, or empty if none is registered for this version
+     * @return The registered DataEncryptionKey, or empty if none is registered for this version
      */
-    public Optional<DataProtectionKey> tryGet(int version) {
+    public Optional<DataEncryptionKey> tryGet(int version) {
         return Optional.ofNullable(keysByVersion.get(version));
     }
 
     /**
-     * Retrieves the current version together with its DataProtectionKey atomically - what
+     * Retrieves the current version together with its DataEncryptionKey atomically - what
      * encrypt-side operations (e.g. DataProtectorImpl.encrypt) resolve fresh on every call, so they
      * always reflect the latest rotation rather than a version captured once at construction.
      *
@@ -158,6 +158,6 @@ public final class KeyRing {
         return new DataProtectorImpl(name, this, formatProvider);
     }
 
-    public record CurrentKey(int version, DataProtectionKey key) {
+    public record CurrentKey(int version, DataEncryptionKey key) {
     }
 }
